@@ -11,11 +11,6 @@ var AppUpgradeCmd = &cobra.Command{
 	Short: "Execute webapp and sidekiq upgrade",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Info("going to run webapp and sidekiq upgrade")
-		logrus.Infof("This is info")
-		logrus.Warnf("This is warn")
-		logrus.Errorf("This is error")
-		logrus.Debugf("this debug")
-		logrus.Fatal("exit")
 
 		appUpgrade()
 
@@ -42,5 +37,6 @@ func appUpgrade() {
 	// check if cnvrg tenancy enabled
 	// check if there is enough compute power for upgrade
 	// get nodes
-	k8s.GetNodes()
+	//k8s.GetNodes()
+	k8s.GetCnvrgApp()
 }
