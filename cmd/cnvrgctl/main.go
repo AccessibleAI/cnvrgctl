@@ -15,12 +15,18 @@ var rootCmd = &cobra.Command{
 	Use:   "cnvrgctl",
 	Short: "cnvrgctl - command line tool for managing cnvrg stack",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if err:= upgradeCmd.MarkFlagRequired("app-image"); err != nil {
+			panic(err)
+		}
+
 		// Setup logging
 		setupLogging()
 		logrus.Debugf("kubeconfig: %v", viper.GetString("kubeconfig"))
 		logrus.Debugf("verbose: %v", viper.GetBool("verbose"))
 		logrus.Debugf("json-log: %v", viper.GetBool("json-log"))
 		logrus.Debugf("pull-app-image: %v", viper.GetBool("pull-app-image"))
+		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
+		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
 	},
 }
 
@@ -56,13 +62,16 @@ func setupCommands() {
 	// Setup commands
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "--verbose=true|false")
 	rootCmd.PersistentFlags().BoolP("json-log", "J", false, "--json-log=true|false")
+	rootCmd.PersistentFlags().StringP("cnvrgapp-name", "n", "cnvrg-app", "name of the CnvrgApp spec")
+	rootCmd.PersistentFlags().StringP("cnvrg-namespace", "S", "cnvrg", "CnvrgApp namespace")
 	upgradeCmd.PersistentFlags().BoolP("pull-app-image", "p", true, "--pull-app-image=true|false set true to pull the image on the k8s node before running the upgrade")
+	upgradeCmd.PersistentFlags().StringP("app-image", "i", "", "app image to use for upgrade")
+
 	kubeconfigDefaultLocation := ""
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfigDefaultLocation = filepath.Join(home, ".kube", "config")
 	}
 	rootCmd.PersistentFlags().String("kubeconfig", kubeconfigDefaultLocation, "absolute path to the kubeconfig file")
-
 	upgradeCmd.AddCommand(upgrade.AppUpgradeCmd)
 	rootCmd.AddCommand(upgradeCmd)
 	if err := viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
@@ -71,10 +80,19 @@ func setupCommands() {
 	if err := viper.BindPFlag("json-log", rootCmd.PersistentFlags().Lookup("json-log")); err != nil {
 		panic(err)
 	}
+	if err := viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig")); err != nil {
+		panic(err)
+	}
+	if err := viper.BindPFlag("cnvrgapp-name", rootCmd.PersistentFlags().Lookup("cnvrgapp-name")); err != nil {
+		panic(err)
+	}
+	if err := viper.BindPFlag("cnvrg-namespace", rootCmd.PersistentFlags().Lookup("cnvrg-namespace")); err != nil {
+		panic(err)
+	}
 	if err := viper.BindPFlag("pull-app-image", upgradeCmd.PersistentFlags().Lookup("pull-app-image")); err != nil {
 		panic(err)
 	}
-	if err := viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig")); err != nil {
+	if err := viper.BindPFlag("app-image", upgradeCmd.PersistentFlags().Lookup("app-image")); err != nil {
 		panic(err)
 	}
 

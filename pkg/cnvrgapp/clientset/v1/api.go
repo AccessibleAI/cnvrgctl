@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// https://www.martin-helmich.de/en/blog/kubernetes-crd-client.html
 type CnvrgAppV1Interface interface {
 	CnvrgApps(namespace string) CnvrgAppInterface
 }

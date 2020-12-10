@@ -4,9 +4,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate controller-gen object paths=$GOFILE
-
 type CnvrgAppSpec struct {
+	Tenancy struct {
+		Enabled        string `json:"enabled"`
+		DedicatedNodes string `json:"dedicatedNodes"`
+		Cnvrg          struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"cnvrg"`
+	} `json:"tenancy"`
 	AppConfigs struct {
 		CnvrgStorageUseIamRole string `json:"cnvrgStorageUseIamRole"`
 		FeatureFlags           string `json:"featureFlags"`
@@ -286,6 +292,7 @@ type CnvrgAppSpec struct {
 
 type CnvrgAppStatus struct{}
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CnvrgApp struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -294,6 +301,7 @@ type CnvrgApp struct {
 	Status CnvrgAppStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CnvrgAppList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
