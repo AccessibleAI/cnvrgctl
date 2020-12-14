@@ -2,7 +2,7 @@ package upgrade
 
 import (
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
-	"github.com/cnvrgctl/pkg/k8s"
+	"github.com/cnvrgctl/pkg/upgrade"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,8 +14,13 @@ var AppUpgradeCmd = &cobra.Command{
 	Short: "Execute webapp and sidekiq upgrade",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Info("Going to run webapp and sidekiq upgrade...")
-
-		appUpgrade()
+		if viper.GetBool("rollback") {
+			logrus.Warnf("rolling back latest upgrade")
+			upgrade.UpdateCnvrgApp(upgrade.LoadCnvrgAppFromBackup())
+		} else {
+			appUpgrade()
+		}
+		logrus.Info("done")
 
 		//prompt := promptui.Select{
 		//	Label: "Select Day",
@@ -35,31 +40,33 @@ var AppUpgradeCmd = &cobra.Command{
 }
 
 func appUpgrade() {
-	// check if k8s availiable
+	// check if upgrade availiable
 	// check if cnvrg app deployed
 	// check if cnvrg tenancy enabled
 	// check if there is enough compute power for upgrade
 	// get nodes
-	//k8s.GetNodes()
+	//upgrade.GetNodes()
 	if viper.GetBool("pull-app-image") {
 		pullAppImage()
 		//pullAppImage()
-
 	}
-	//k8s.GetCnvrgApp()
+	upgrade.BackupCnvrgApp()
+	//upgrade.WatchForDeploymentScaleToZero()
+	upgrade.SidekiqGracefulShutdown()
+	//upgrade.GetNodesMetrics()
+	//upgrade.GetCnvrgApp()
 }
 
 func pullAppImage() {
-	cnvrgApp := k8s.GetCnvrgApp()
+	cnvrgApp := upgrade.GetCnvrgApp()
 	tenancyEnabled := isCnvrgTenancyEnabled(cnvrgApp)
 	verifyUpgrade(cnvrgApp)
 	appImage := viper.GetString("app-image")
 	logrus.Infof("cnvrg tenancy enabled: %v", tenancyEnabled)
 	logrus.Infof("app image for upgrade: %v", viper.GetString("app-image"))
 	imagePullReady := make(chan bool)
-	go k8s.WatchForImagePullDaemonSetReady(imagePullReady)
-	k8s.DeployImagePullDaemonSet(cnvrgApp, appImage)
-	//imagePullReady <- true
+	go upgrade.WatchForImagePullDaemonSetReady(imagePullReady)
+	upgrade.DeployImagePullDaemonSet(cnvrgApp, appImage)
 	<-imagePullReady
 	logrus.Info("DONE")
 }
@@ -67,7 +74,7 @@ func pullAppImage() {
 func verifyUpgrade(cnvrgApp *cnvrgappv1.CnvrgApp) {
 	imageEdition := getImageEdition()
 	if imageEdition != cnvrgApp.Spec.CnvrgApp.Edition {
-		logrus.Fatalf("Deployment edition and image edition doesn't match. Deployment: %v, Image: %v ",
+		logrus.Fatalf("deployment edition and image edition doesn't match. Deployment: %v, Image: %v ",
 			cnvrgApp.Spec.CnvrgApp.Edition, imageEdition)
 	}
 }

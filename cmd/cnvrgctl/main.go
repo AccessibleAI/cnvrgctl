@@ -9,16 +9,19 @@ import (
 	"k8s.io/client-go/util/homedir"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "cnvrgctl",
 	Short: "cnvrgctl - command line tool for managing cnvrg stack",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if err:= upgradeCmd.MarkFlagRequired("app-image"); err != nil {
-			panic(err)
+		// app-image is required only if rollback flag not set
+		if !viper.GetBool("rollback") {
+			if err := upgradeCmd.MarkFlagRequired("app-image"); err != nil {
+				panic(err)
+			}
 		}
-
 		// Setup logging
 		setupLogging()
 		logrus.Debugf("kubeconfig: %v", viper.GetString("kubeconfig"))
@@ -27,6 +30,7 @@ var rootCmd = &cobra.Command{
 		logrus.Debugf("pull-app-image: %v", viper.GetBool("pull-app-image"))
 		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
 		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
+		logrus.Debugf("rollback: %v", viper.GetBool("rollback"))
 	},
 }
 
@@ -66,6 +70,7 @@ func setupCommands() {
 	rootCmd.PersistentFlags().StringP("cnvrg-namespace", "S", "cnvrg", "CnvrgApp namespace")
 	upgradeCmd.PersistentFlags().BoolP("pull-app-image", "p", true, "--pull-app-image=true|false set true to pull the image on the k8s node before running the upgrade")
 	upgradeCmd.PersistentFlags().StringP("app-image", "i", "", "app image to use for upgrade")
+	upgradeCmd.PersistentFlags().BoolP("rollback", "r", false, "rollback to previous cnvrgapp")
 
 	kubeconfigDefaultLocation := ""
 	if home := homedir.HomeDir(); home != "" {
@@ -95,11 +100,15 @@ func setupCommands() {
 	if err := viper.BindPFlag("app-image", upgradeCmd.PersistentFlags().Lookup("app-image")); err != nil {
 		panic(err)
 	}
+	if err := viper.BindPFlag("rollback", upgradeCmd.PersistentFlags().Lookup("rollback")); err != nil {
+		panic(err)
+	}
 
 }
 
 func initConfig() {
 	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
 
 func main() {

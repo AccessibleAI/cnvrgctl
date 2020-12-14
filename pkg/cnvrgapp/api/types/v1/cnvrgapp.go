@@ -70,6 +70,7 @@ type CnvrgAppSpec struct {
 		SidekiqSearchkickMemory   string `json:"sidekiqSearchkickMemory"`
 		SidekiqSearchkickReplicas int    `json:"sidekiqSearchkickReplicas"`
 		SvcName                   string `json:"svcName"`
+		ResourcesRequestEnabled   string `json:"resourcesRequestEnabled"`
 	} `json:"cnvrgApp"`
 	CnvrgRouter struct {
 		Enabled  string `json:"enabled"`
