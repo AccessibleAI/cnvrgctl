@@ -56,7 +56,12 @@ func pullAppImage() {
 	appImage := viper.GetString("app-image")
 	logrus.Infof("cnvrg tenancy enabled: %v", tenancyEnabled)
 	logrus.Infof("app image for upgrade: %v", viper.GetString("app-image"))
+	imagePullReady := make(chan bool)
+	go k8s.WatchForImagePullDaemonSetReady(imagePullReady)
 	k8s.DeployImagePullDaemonSet(cnvrgApp, appImage)
+	//imagePullReady <- true
+	<-imagePullReady
+	logrus.Info("DONE")
 }
 
 func verifyUpgrade(cnvrgApp *cnvrgappv1.CnvrgApp) {

@@ -2,8 +2,6 @@ package k8s
 
 import (
 	"context"
-	"fmt"
-	cnvrgappinformer "github.com/cnvrgctl/pkg/cnvrgapp"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
 	cnvrgappV1client "github.com/cnvrgctl/pkg/cnvrgapp/clientset/v1"
 	"github.com/sirupsen/logrus"
@@ -20,6 +18,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+const PullImageDsName = "cnvrg-image-puller"
 
 func getK8SDefaultClient() (*rest.Config, *kubernetes.Clientset) {
 	config, err := clientcmd.BuildConfigFromFlags("", viper.GetString("kubeconfig"))
@@ -65,22 +65,11 @@ func GetCnvrgApp() (cnvrgapp *cnvrgappv1.CnvrgApp) {
 		logrus.Fatal("Error during fetching the cnvrgapp")
 	}
 	logrus.Debug(cnvrgapp)
-	store := cnvrgappinformer.WatchResources(clientSet)
-
-
-	appObj, exists, err := store.GetByKey("cnvrg/cnvrg-app")
-
-	if exists {
-		app := appObj.(*cnvrgappv1.CnvrgApp)
-		logrus.Info(app.Name)
-	}
-
 	return
-
 }
 
 func GetAppDeployment(webAppDeploymentName string) (appDeploy *apps.Deployment) {
-	logrus.Info("Getting webapp deployment")
+	logrus.Info("getting webapp deployment")
 	_, client := getK8SDefaultClient()
 	clientset := client.AppsV1().Deployments(viper.GetString("cnvrg-namespace"))
 	appDeploy, err := clientset.Get(context.TODO(), webAppDeploymentName, metav1.GetOptions{})
@@ -89,13 +78,11 @@ func GetAppDeployment(webAppDeploymentName string) (appDeploy *apps.Deployment) 
 		logrus.Fatal("Error fetching app deployment")
 	}
 	return
-
 }
 
 func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
 	logrus.Info("starting image pull daemon set...")
-	dsName := "cnvrg-image-puller"
-	labelSet := map[string]string{"ds-name": dsName}
+	specSelectorLabels := map[string]string{"app": PullImageDsName}
 	command := []string{"/bin/bash", "-c", "sleep inf"}
 	appDeployment := GetAppDeployment(cnvrgApp.Spec.CnvrgApp.SvcName)
 	logrus.Debugf("image cache ds using pull secret: %v", appDeployment.Spec.Template.Spec.ImagePullSecrets)
@@ -104,15 +91,15 @@ func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
 	ds := &apps.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: viper.GetString("cnvrg-namespace"),
-			Name:      dsName,
+			Name:      PullImageDsName,
 		},
 		Spec: apps.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labelSet,
+				MatchLabels: specSelectorLabels,
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labelSet,
+					Labels: specSelectorLabels,
 				},
 				Spec: v1.PodSpec{
 					ImagePullSecrets: appDeployment.Spec.Template.Spec.ImagePullSecrets,
@@ -120,7 +107,7 @@ func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
 					NodeSelector:     appDeployment.Spec.Template.Spec.NodeSelector,
 					Containers: []v1.Container{
 						{
-							Name:    dsName,
+							Name:    PullImageDsName,
 							Image:   image,
 							Command: command,
 						},
@@ -129,51 +116,81 @@ func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
 			},
 		},
 	}
-	logrus.Debugf("Gonna create pull image DaemonSet: %v", ds)
 	_, client := getK8SDefaultClient()
 	dsClientSet := client.AppsV1().DaemonSets(viper.GetString("cnvrg-namespace"))
-	_, err := dsClientSet.Create(context.TODO(), ds, metav1.CreateOptions{})
-	if errors.IsAlreadyExists(err) {
-		logrus.Warn("the Image Pull DaemonSet already exists, gonna update it")
-		_, err = dsClientSet.Update(context.TODO(), ds, metav1.UpdateOptions{})
-		if err != nil {
-			logrus.Debug(err.Error())
-			logrus.Fatal("Wasn't able to update Image Pull DaemonSet")
-		}
+	err := dsClientSet.Delete(context.TODO(), PullImageDsName, metav1.DeleteOptions{})
+	if errors.IsNotFound(err) {
+		logrus.Warnf("nothing to delete, ds %v not found", PullImageDsName)
 	} else if err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("Wasn't able to create Image Pull DaemonSet ")
+		logrus.Fatal("wasn't able to delete image pull image ds")
 	}
-	logrus.Info("The Image Pull DaemonSet successfully created")
+	logrus.Debugf("creating pull image DaemonSet: %v", ds)
+	_, err = dsClientSet.Create(context.TODO(), ds, metav1.CreateOptions{})
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("wasn't able to create image pull ds")
+	}
 
+	logrus.Info("image pull ds is submitted, waiting to become ready...")
+}
+
+func WatchForImagePullDaemonSetReady(ready chan<- bool) {
+	_, client := getK8SDefaultClient()
 	factory := informers.NewSharedInformerFactory(client, 0)
 	informer := factory.Apps().V1().DaemonSets().Informer()
 	stopper := make(chan struct{})
-	defer close(stopper)
+	podsWatchStopper := make(chan struct{})
 	defer runtime.HandleCrash()
+	go WatchForPodReady(podsWatchStopper, "app", PullImageDsName)
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    onAdd,
-		UpdateFunc: onUpdate,
+		UpdateFunc: func(old, new interface{}) {
+			dsNew := new.(*apps.DaemonSet)
+			logrus.Debugf("Status: %v:", dsNew.Status)
+			if dsNew.Name == PullImageDsName && dsNew.Status.DesiredNumberScheduled == dsNew.Status.NumberAvailable {
+				logrus.Infof("watch DaemonSet %v completed, DS is ready", PullImageDsName)
+				close(stopper)
+				close(podsWatchStopper)
+				ready <- true
+			} else {
+				logrus.Infof("%v DaemonSet is not ready yet...", PullImageDsName)
+			}
+		},
 	})
 	go informer.Run(stopper)
 	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
-		runtime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
+		logrus.Fatal("timed out waiting for caches to sync")
+		close(stopper)
 		return
 	}
 	<-stopper
 }
 
-func onUpdate(old, new interface{}) {
-	// Cast the obj as node
-	dsOld := old.(*apps.DaemonSet)
-	dsNew := new.(*apps.DaemonSet)
-	logrus.Infof("Old: %v", dsOld.Labels)
-	logrus.Infof("New: %v", dsNew.Labels)
-}
+func WatchForPodReady(stopper chan struct{}, labelKey string, labelVal string) {
+	_, client := getK8SDefaultClient()
+	factory := informers.NewSharedInformerFactory(client, 0)
+	informer := factory.Core().V1().Pods().Informer()
 
-func onAdd(obj interface{}) {
-	// Cast the obj as node
-	ds := obj.(*apps.DaemonSet)
-	logrus.Info(ds.Name)
-
+	defer runtime.HandleCrash()
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) {
+			pod := new.(*v1.Pod)
+			if val, ok := pod.ObjectMeta.Labels[labelKey]; ok {
+				if val == labelVal {
+					logrus.Infof("pod %v phase: %v", pod.Name, pod.Status.Phase)
+					if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].State.Waiting != nil {
+						logrus.Infof("pod %v status: %v", pod.Name,
+							pod.Status.ContainerStatuses[0].State.Waiting.Reason)
+					}
+				}
+			}
+		},
+	})
+	go informer.Run(stopper)
+	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
+		logrus.Fatal("timed out waiting for caches to sync")
+		close(stopper)
+		return
+	}
+	<-stopper
 }

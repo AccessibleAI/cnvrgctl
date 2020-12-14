@@ -4,7 +4,6 @@ import (
 	"context"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
 	v1 "github.com/cnvrgctl/pkg/cnvrgapp/clientset/v1"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,13 +28,13 @@ func WatchResources(clientSet v1.CnvrgAppV1Interface) cache.Store {
 		10*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				logrus.Info("cnvrgapp has ben created")
+				//logrus.Info("cnvrgapp has ben created")
 			},
 			UpdateFunc: func(old, new interface{}) {
-				logrus.Info("The cnvrgapp has been updates")
+				//logrus.Info("The cnvrgapp has been updated")
 			},
 			DeleteFunc: func(obj interface{}) {
-				logrus.Info("the cnvrgapp has been deleted")
+				//logrus.Info("the cnvrgapp has been deleted")
 			},
 		},
 	)
