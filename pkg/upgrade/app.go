@@ -195,24 +195,24 @@ func BackupCnvrgApp() {
 }
 
 func SidekiqGracefulShutdown() {
+	logrus.Infof("gracefully taking down sidekiq")
 	cnvrgApp := GetCnvrgApp()
 	cnvrgApp.Spec.CnvrgApp.SidekiqReplicas = 0
 	cnvrgApp.Spec.CnvrgApp.SidekiqSearchkickReplicas = 0
 	UpdateCnvrgApp(cnvrgApp)
 	stopper := make(chan struct{})
-	//go WatchForPods(stopper, "app", []string{SidekiqDeploymentName, SearchkiqDeploymentName})
 	go IsSidekiqScaledToZero(stopper)
 	<-stopper
+	logrus.Infof("sidekiq stopped")
 
 }
 
 func IsSidekiqScaledToZero(stopper chan struct{}) {
 
-	logrus.Infof("scale sidekiq to 0")
+	messages := make(chan string, 100)
 	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
-	s.Suffix = "waiting for sidekiq scale to 0"
-	s.Color("green")
-
+	go startSpinner(s, "scaling sidekiq to 0", messages)
+	go WatchForPods(stopper, "app", []string{SidekiqDeploymentName, SearchkiqDeploymentName}, messages)
 	for {
 		sidekiqDeployment := IsDeploymentScaledTo(
 			SidekiqDeploymentName,
@@ -224,22 +224,15 @@ func IsSidekiqScaledToZero(stopper chan struct{}) {
 			0)
 
 		if sidekiqDeployment && searchkiqDeployment {
-			logrus.Infof("%v scaled down to 0", SidekiqDeploymentName)
-			logrus.Infof("%v scaled down to 0", SearchkiqDeploymentName)
+			logrus.Debug("%v scaled down to 0", SidekiqDeploymentName)
+			logrus.Debug("%v scaled down to 0", SearchkiqDeploymentName)
 			s.Stop()
+			close(messages)
 			close(stopper)
-			logrus.Infof("sidekiq scaled to 0")
 			break
 		}
-		if !s.Active() {
-			s.Start()
-		}
-
 		time.Sleep(5 * time.Second)
-		s.Suffix = " bla bla bl"
-		s.Restart()
 	}
-
 }
 
 func IsDeploymentScaledTo(name string, ns string, scaleTo int32) (ready bool) {
@@ -253,7 +246,7 @@ func IsDeploymentScaledTo(name string, ns string, scaleTo int32) (ready bool) {
 		logrus.Fatalf("wasn't able to get %v deploy", name)
 	}
 	if d.Status.ReadyReplicas == scaleTo {
-		logrus.Infof("%v scaled to: %v ", name, scaleTo)
+		logrus.Debug("%v scaled to: %v ", name, scaleTo)
 		ready = true
 	}
 	return
@@ -322,6 +315,7 @@ func DeleteDaemonSet(name string) {
 func startSpinner(s *spinner.Spinner, suffixMessage string, messages <-chan string) {
 	s.Suffix = suffixMessage
 	s.Color("green")
+	s.Start()
 	for v := range messages {
 		msg := fmt.Sprintf("%v [ %v ]", suffixMessage, v)
 		s.Suffix = msg
@@ -345,9 +339,9 @@ func WatchForImagePullDaemonSetReady(ready chan<- bool) {
 			dsNew := new.(*apps.DaemonSet)
 			logrus.Debugf("Status: %v:", dsNew.Status)
 			if dsNew.Name == PullImageDsName && dsNew.Status.DesiredNumberScheduled == dsNew.Status.NumberAvailable {
+				close(messages)
 				close(stopper)
 				close(podsWatchStopper)
-				close(messages)
 				s.Stop()
 				logrus.Debug("watch DaemonSet %v completed, DS is ready", PullImageDsName)
 				DeleteDaemonSet(PullImageDsName)
@@ -359,8 +353,7 @@ func WatchForImagePullDaemonSetReady(ready chan<- bool) {
 	})
 	go informer.Run(stopper)
 	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
-		logrus.Fatal("timed out waiting for caches to sync")
-		close(stopper)
+		logrus.Debug("timed out waiting for caches to sync or the stopper was closed...")
 		return
 	}
 	<-stopper
@@ -401,8 +394,7 @@ func WatchForPods(stopper chan struct{}, labelKey string, labelsVal []string, me
 	})
 	go informer.Run(stopper)
 	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
-		logrus.Fatal("timed out waiting for caches to sync")
-		close(stopper)
+		logrus.Debug("timed out waiting for caches to sync or the stopper was closed...")
 		return
 	}
 	<-stopper
@@ -418,8 +410,7 @@ func WatchForDeployments(updateHandler updateEventHandler, stopper chan struct{}
 	})
 	go informer.Run(stopper)
 	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
-		logrus.Fatal("timed out waiting for caches to sync")
-		close(stopper)
+		logrus.Fatal("timed out waiting for caches to sync or the stopper was closed...")
 		return
 	}
 	<-stopper

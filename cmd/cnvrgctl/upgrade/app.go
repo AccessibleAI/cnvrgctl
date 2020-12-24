@@ -48,12 +48,11 @@ func appUpgrade() {
 	//upgrade.GetNodes()
 	if viper.GetBool("pull-app-image") {
 		pullAppImage()
-		//pullAppImage()
 	}
 	upgrade.BackupCnvrgApp()
 	//upgrade.WatchForDeploymentScaleToZero()
 
-	//upgrade.SidekiqGracefulShutdown()
+	upgrade.SidekiqGracefulShutdown()
 
 	//upgrade.GetNodesMetrics()
 	//upgrade.GetCnvrgApp()
