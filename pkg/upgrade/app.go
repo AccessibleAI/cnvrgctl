@@ -2,6 +2,8 @@ package upgrade
 
 import (
 	"context"
+	"fmt"
+	"github.com/briandowns/spinner"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
 	cnvrgappV1client "github.com/cnvrgctl/pkg/cnvrgapp/clientset/v1"
 	"github.com/sirupsen/logrus"
@@ -19,6 +21,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
+	"time"
 )
 
 const (
@@ -27,6 +30,8 @@ const (
 	SidekiqDeploymentName   = "sidekiq"
 	SearchkiqDeploymentName = "sidekiq-searchkick"
 )
+
+type updateEventHandler func(old, new interface{}, stopper chan struct{})
 
 func getK8SDefaultClient() (*rest.Config, *kubernetes.Clientset) {
 	config, err := clientcmd.BuildConfigFromFlags("", viper.GetString("kubeconfig"))
@@ -194,40 +199,68 @@ func SidekiqGracefulShutdown() {
 	cnvrgApp.Spec.CnvrgApp.SidekiqReplicas = 0
 	cnvrgApp.Spec.CnvrgApp.SidekiqSearchkickReplicas = 0
 	UpdateCnvrgApp(cnvrgApp)
-	stopper := make(chan bool)
-	go WatchForDeploymentScaleToZero(stopper)
+	stopper := make(chan struct{})
+	//go WatchForPods(stopper, "app", []string{SidekiqDeploymentName, SearchkiqDeploymentName})
+	go IsSidekiqScaledToZero(stopper)
 	<-stopper
+
 }
 
-func WatchForDeploymentScaleToZero(stopper chan<- bool) {
-	logrus.Info("getting sidekiq deployment")
-	_, client := getK8SDefaultClient()
-	clientset := client.AppsV1().Deployments(viper.GetString("cnvrg-namespace"))
-	sidekiqDeploy, err := clientset.Get(context.TODO(), SidekiqDeploymentName, metav1.GetOptions{})
-	if err != nil {
-		logrus.Debug(err.Error())
-		logrus.Fatal("wasn't able to get sidekiq deploy")
-	}
-	searchkiqDeploy, err := clientset.Get(context.TODO(), SearchkiqDeploymentName, metav1.GetOptions{})
-	if err != nil {
-		logrus.Debug(err.Error())
-		logrus.Fatal("wasn't able to get sidekiq-searchkick deploy")
-	}
-	if searchkiqDeploy.Status.ReadyReplicas == 0 && sidekiqDeploy.Status.ReadyReplicas == 0 {
-		logrus.Info("sidekiq deployment is scaled down")
-		logrus.Info("sidekiq-searchkic deployment is scaled down")
-		stopper <- true
+func IsSidekiqScaledToZero(stopper chan struct{}) {
+
+	logrus.Infof("scale sidekiq to 0")
+	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
+	s.Suffix = "waiting for sidekiq scale to 0"
+	s.Color("green")
+
+	for {
+		sidekiqDeployment := IsDeploymentScaledTo(
+			SidekiqDeploymentName,
+			viper.GetString("cnvrg-namespace"),
+			0)
+		searchkiqDeployment := IsDeploymentScaledTo(
+			SearchkiqDeploymentName,
+			viper.GetString("cnvrg-namespace"),
+			0)
+
+		if sidekiqDeployment && searchkiqDeployment {
+			logrus.Infof("%v scaled down to 0", SidekiqDeploymentName)
+			logrus.Infof("%v scaled down to 0", SearchkiqDeploymentName)
+			s.Stop()
+			close(stopper)
+			logrus.Infof("sidekiq scaled to 0")
+			break
+		}
+		if !s.Active() {
+			s.Start()
+		}
+
+		time.Sleep(5 * time.Second)
+		s.Suffix = " bla bla bl"
+		s.Restart()
 	}
 
+}
+
+func IsDeploymentScaledTo(name string, ns string, scaleTo int32) (ready bool) {
+	ready = false
+	logrus.Debug("getting %v deployment", name)
+	_, client := getK8SDefaultClient()
+	clientset := client.AppsV1().Deployments(ns)
+	d, err := clientset.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("error fetching app deployment")
+		logrus.Fatalf("wasn't able to get %v deploy", name)
+	}
+	if d.Status.ReadyReplicas == scaleTo {
+		logrus.Infof("%v scaled to: %v ", name, scaleTo)
+		ready = true
 	}
 	return
 }
 
 func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
-	logrus.Info("starting image pull daemon set...")
+	logrus.Debugf("starting image pull daemon set...")
 	specSelectorLabels := map[string]string{"app": PullImageDsName}
 	command := []string{"/bin/bash", "-c", "sleep inf"}
 	appDeployment := GetAppDeployment(cnvrgApp.Spec.CnvrgApp.SvcName)
@@ -264,21 +297,36 @@ func DeployImagePullDaemonSet(cnvrgApp *cnvrgappv1.CnvrgApp, image string) {
 	}
 	_, client := getK8SDefaultClient()
 	dsClientSet := client.AppsV1().DaemonSets(viper.GetString("cnvrg-namespace"))
-	err := dsClientSet.Delete(context.TODO(), PullImageDsName, metav1.DeleteOptions{})
-	if errors.IsNotFound(err) {
-		logrus.Warnf("nothing to delete, ds %v not found", PullImageDsName)
-	} else if err != nil {
-		logrus.Debug(err.Error())
-		logrus.Fatal("wasn't able to delete image pull image ds")
-	}
+	DeleteDaemonSet(PullImageDsName)
 	logrus.Debugf("creating pull image DaemonSet: %v", ds)
-	_, err = dsClientSet.Create(context.TODO(), ds, metav1.CreateOptions{})
+	_, err := dsClientSet.Create(context.TODO(), ds, metav1.CreateOptions{})
 	if err != nil {
 		logrus.Debug(err.Error())
 		logrus.Fatal("wasn't able to create image pull ds")
 	}
+	logrus.Debugf("image pull ds is submitted, waiting to become ready...")
+}
 
-	logrus.Info("image pull ds is submitted, waiting to become ready...")
+func DeleteDaemonSet(name string) {
+	_, client := getK8SDefaultClient()
+	dsClientSet := client.AppsV1().DaemonSets(viper.GetString("cnvrg-namespace"))
+	err := dsClientSet.Delete(context.TODO(), name, metav1.DeleteOptions{})
+	if errors.IsNotFound(err) {
+		logrus.Debug("nothing to delete, ds %v not found", PullImageDsName)
+	} else if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("wasn't able to delete image pull image ds")
+	}
+}
+
+func startSpinner(s *spinner.Spinner, suffixMessage string, messages <-chan string) {
+	s.Suffix = suffixMessage
+	s.Color("green")
+	for v := range messages {
+		msg := fmt.Sprintf("%v [ %v ]", suffixMessage, v)
+		s.Suffix = msg
+		s.Restart()
+	}
 }
 
 func WatchForImagePullDaemonSetReady(ready chan<- bool) {
@@ -287,19 +335,25 @@ func WatchForImagePullDaemonSetReady(ready chan<- bool) {
 	informer := factory.Apps().V1().DaemonSets().Informer()
 	stopper := make(chan struct{})
 	podsWatchStopper := make(chan struct{})
+	messages := make(chan string, 100)
+	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
+	go startSpinner(s, "caching app image on all nodes", messages)
 	defer runtime.HandleCrash()
-	go WatchForPodReady(podsWatchStopper, "app", PullImageDsName)
+	go WatchForPods(podsWatchStopper, "app", []string{PullImageDsName}, messages)
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(old, new interface{}) {
 			dsNew := new.(*apps.DaemonSet)
 			logrus.Debugf("Status: %v:", dsNew.Status)
 			if dsNew.Name == PullImageDsName && dsNew.Status.DesiredNumberScheduled == dsNew.Status.NumberAvailable {
-				logrus.Infof("watch DaemonSet %v completed, DS is ready", PullImageDsName)
 				close(stopper)
 				close(podsWatchStopper)
+				close(messages)
+				s.Stop()
+				logrus.Debug("watch DaemonSet %v completed, DS is ready", PullImageDsName)
+				DeleteDaemonSet(PullImageDsName)
 				ready <- true
 			} else {
-				logrus.Infof("%v DaemonSet is not ready yet...", PullImageDsName)
+				logrus.Debug("%v DaemonSet is not ready yet...", PullImageDsName)
 			}
 		},
 	})
@@ -312,7 +366,7 @@ func WatchForImagePullDaemonSetReady(ready chan<- bool) {
 	<-stopper
 }
 
-func WatchForPodReady(stopper chan struct{}, labelKey string, labelVal string) {
+func WatchForPods(stopper chan struct{}, labelKey string, labelsVal []string, messages chan string) {
 	_, client := getK8SDefaultClient()
 	factory := informers.NewSharedInformerFactory(client, 0)
 	informer := factory.Core().V1().Pods().Informer()
@@ -321,12 +375,26 @@ func WatchForPodReady(stopper chan struct{}, labelKey string, labelVal string) {
 		UpdateFunc: func(old, new interface{}) {
 			pod := new.(*v1.Pod)
 			if val, ok := pod.ObjectMeta.Labels[labelKey]; ok {
-				if val == labelVal {
-					logrus.Infof("pod %v phase: %v", pod.Name, pod.Status.Phase)
+				if _, found := Find(labelsVal, val); found == true {
+					msg := fmt.Sprintf("pod %v phase: %v", pod.Name, pod.Status.Phase)
+					logrus.Debug(msg)
+					messages <- msg
 					if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].State.Waiting != nil {
-						logrus.Infof("pod %v status: %v", pod.Name,
-							pod.Status.ContainerStatuses[0].State.Waiting.Reason)
+						msg = fmt.Sprintf(
+							"pod %v status: %v", pod.Name, pod.Status.ContainerStatuses[0].State.Waiting.Reason)
+						logrus.Debug(msg)
+						messages <- msg
 					}
+				}
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			pod := obj.(*v1.Pod)
+			if val, ok := pod.ObjectMeta.Labels[labelKey]; ok {
+				if _, found := Find(labelsVal, val); found == true {
+					msg := fmt.Sprintf("pod %v deleted", pod.Name)
+					logrus.Debug(msg)
+					messages <- msg
 				}
 			}
 		},
@@ -338,4 +406,47 @@ func WatchForPodReady(stopper chan struct{}, labelKey string, labelVal string) {
 		return
 	}
 	<-stopper
+}
+
+func WatchForDeployments(updateHandler updateEventHandler, stopper chan struct{}) {
+	_, client := getK8SDefaultClient()
+	factory := informers.NewSharedInformerFactory(client, 0)
+	informer := factory.Apps().V1().Deployments().Informer()
+	defer runtime.HandleCrash()
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) { updateHandler(old, new, stopper) },
+	})
+	go informer.Run(stopper)
+	if !cache.WaitForCacheSync(stopper, informer.HasSynced) {
+		logrus.Fatal("timed out waiting for caches to sync")
+		close(stopper)
+		return
+	}
+	<-stopper
+}
+
+func WatchForSidekiqScaleDown(old, new interface{}, stopper chan struct{}) {
+	sidekiqDown := true
+	dep := new.(*apps.Deployment)
+	logrus.Debugf("Status: %v:", dep.Status)
+
+	if dep.Name == SidekiqDeploymentName {
+		logrus.Infof("%v status: %v", dep.Name, dep.Status.ReadyReplicas)
+	}
+	if dep.Name == SearchkiqDeploymentName {
+	}
+
+	if sidekiqDown {
+		close(stopper)
+	}
+
+}
+
+func Find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
 }

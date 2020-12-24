@@ -52,12 +52,15 @@ func appUpgrade() {
 	}
 	upgrade.BackupCnvrgApp()
 	//upgrade.WatchForDeploymentScaleToZero()
-	upgrade.SidekiqGracefulShutdown()
+
+	//upgrade.SidekiqGracefulShutdown()
+
 	//upgrade.GetNodesMetrics()
 	//upgrade.GetCnvrgApp()
 }
 
 func pullAppImage() {
+	logrus.Infof("caching app image [%v] on all nodes ", viper.GetString("app-image"))
 	cnvrgApp := upgrade.GetCnvrgApp()
 	tenancyEnabled := isCnvrgTenancyEnabled(cnvrgApp)
 	verifyUpgrade(cnvrgApp)
@@ -68,7 +71,7 @@ func pullAppImage() {
 	go upgrade.WatchForImagePullDaemonSetReady(imagePullReady)
 	upgrade.DeployImagePullDaemonSet(cnvrgApp, appImage)
 	<-imagePullReady
-	logrus.Info("DONE")
+	logrus.Infof("app image [%v] was successfully cached on on all nodes ", viper.GetString("app-image"))
 }
 
 func verifyUpgrade(cnvrgApp *cnvrgappv1.CnvrgApp) {
