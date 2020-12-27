@@ -13,6 +13,7 @@ type CnvrgAppSpec struct {
 	PrivilegedSa  string `json:"privilegedSa"`
 	SecurityMode  string `json:"securityMode"`
 	IngressType   string `json:"ingressType"`
+	UseHTTPS      string `json:"useHttps"`
 	Tenancy       struct {
 		Enabled        string `json:"enabled"`
 		DedicatedNodes string `json:"dedicatedNodes"`
@@ -128,12 +129,6 @@ type CnvrgAppSpec struct {
 		MemoryLimit    string `json:"memoryLimit"`
 		MemoryRequest  string `json:"memoryRequest"`
 	} `json:"fluentd"`
-	Grafana struct {
-		Image    string      `json:"image"`
-		NodePort interface{} `json:"nodePort"`
-		Port     interface{} `json:"port"`
-		SvcName  string      `json:"svcName"`
-	} `json:"grafana"`
 	Hostpath struct {
 		CPULimit         string `json:"cpuLimit"`
 		CPURequest       string `json:"cpuRequest"`
@@ -246,7 +241,6 @@ type CnvrgAppSpec struct {
 		StorageClass string `json:"storageClass"`
 		StorageSize  string `json:"storageSize"`
 	} `json:"pgBackup"`
-
 	Rbac struct {
 		Role               string `json:"role"`
 		RoleBindingName    string `json:"roleBindingName"`
@@ -276,70 +270,68 @@ type CnvrgAppSpec struct {
 		Image   string `json:"image"`
 		SeedCmd string `json:"seedCmd"`
 	} `json:"seeder"`
-	UseHTTPS string `json:"useHttps"`
-
 	Monitoring struct {
+		Enabled      string `json:"enabled"`
 		DcgmExporter struct {
-			Enabled string      `yaml:"enabled"`
-			Image   string      `yaml:"image"`
-			Port    interface{} `yaml:"port"`
-		} `yaml:"dcgmExporter"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+			Port    string `json:"port"`
+		} `json:"dcgmExporter"`
 		DefaultServiceMonitors struct {
-			Enabled string `yaml:"enabled"`
-		} `yaml:"defaultServiceMonitors"`
-		Enabled string `yaml:"enabled"`
+			Enabled string `json:"enabled"`
+		} `json:"defaultServiceMonitors"`
 		Grafana struct {
-			Enabled  string      `yaml:"enabled"`
-			Image    string      `yaml:"image"`
-			NodePort interface{} `yaml:"nodePort"`
-			Port     interface{} `yaml:"port"`
-			SvcName  string      `yaml:"svcName"`
-		} `yaml:"grafana"`
+			Enabled  string `json:"enabled"`
+			Image    string `json:"image"`
+			NodePort string `json:"nodePort"`
+			Port     string `json:"port"`
+			SvcName  string `json:"svcName"`
+		} `json:"grafana"`
 		IdleMetricsExporter struct {
-			Enabled string `yaml:"enabled"`
-		} `yaml:"idleMetricsExporter"`
+			Enabled string `json:"enabled"`
+		} `json:"idleMetricsExporter"`
 		KubeStateMetrics struct {
-			Enabled string `yaml:"enabled"`
-			Image   string `yaml:"image"`
-		} `yaml:"kubeStateMetrics"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+		} `json:"kubeStateMetrics"`
 		MetricsServer struct {
-			Enabled string `yaml:"enabled"`
-			Image   string `yaml:"image"`
-		} `yaml:"metricsServer"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+		} `json:"metricsServer"`
 		MinioExporter struct {
-			Enabled string `yaml:"enabled"`
-			Image   string `yaml:"image"`
-		} `yaml:"minioExporter"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+		} `json:"minioExporter"`
 		NodeExporter struct {
-			Enabled string      `yaml:"enabled"`
-			Image   string      `yaml:"image"`
-			Port    interface{} `yaml:"port"`
-		} `yaml:"nodeExporter"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+			Port    string `json:"port"`
+		} `json:"nodeExporter"`
 		Prometheus struct {
-			CPURequest    string      `yaml:"cpuRequest"`
-			Enabled       string      `yaml:"enabled"`
-			Image         string      `yaml:"image"`
-			MemoryRequest string      `yaml:"memoryRequest"`
-			NodePort      interface{} `yaml:"nodePort"`
-			Port          interface{} `yaml:"port"`
-			StorageClass  string      `yaml:"storageClass"`
-			StorageSize   string      `yaml:"storageSize"`
-			SvcName       string      `yaml:"svcName"`
-		} `yaml:"prometheus"`
+			CPURequest    string `json:"cpuRequest"`
+			Enabled       string `json:"enabled"`
+			Image         string `json:"image"`
+			MemoryRequest string `json:"memoryRequest"`
+			NodePort      string `json:"nodePort"`
+			Port          string `json:"port"`
+			StorageClass  string `json:"storageClass"`
+			StorageSize   string `json:"storageSize"`
+			SvcName       string `json:"svcName"`
+		} `json:"prometheus"`
 		PrometheusOperator struct {
-			Enabled string `yaml:"enabled"`
+			Enabled string `json:"enabled"`
 			Images  struct {
-				ConfigReloaderImage           string `yaml:"configReloaderImage"`
-				KubeRbacProxyImage            string `yaml:"kubeRbacProxyImage"`
-				OperatorImage                 string `yaml:"operatorImage"`
-				PrometheusConfigReloaderImage string `yaml:"prometheusConfigReloaderImage"`
-			} `yaml:"images"`
-		} `yaml:"prometheusOperator"`
+				ConfigReloaderImage           string `json:"configReloaderImage"`
+				KubeRbacProxyImage            string `json:"kubeRbacProxyImage"`
+				OperatorImage                 string `json:"operatorImage"`
+				PrometheusConfigReloaderImage string `json:"prometheusConfigReloaderImage"`
+			} `json:"images"`
+		} `json:"prometheusOperator"`
 		SidekiqExporter struct {
-			Enabled string `yaml:"enabled"`
-			Image   string `yaml:"image"`
-		} `yaml:"sidekiqExporter"`
-	} `yaml:"monitoring"`
+			Enabled string `json:"enabled"`
+			Image   string `json:"image"`
+		} `json:"sidekiqExporter"`
+	} `json:"monitoring"`
 }
 
 type CnvrgAppStatus struct{}

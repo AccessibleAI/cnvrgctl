@@ -13,7 +13,7 @@ func (in *CnvrgApp) DeepCopyInto(out *CnvrgApp) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec = out.Spec
 	out.Status = in.Status
 }
 

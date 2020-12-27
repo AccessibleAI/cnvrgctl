@@ -5,7 +5,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
+// +kubebuilder:object:generate=true
+// +groupName=mlops.cnvrg.io
 const GroupName = "mlops.cnvrg.io"
 const GroupVersion = "v1"
 
@@ -17,11 +18,7 @@ var (
 )
 
 func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion,
-		&CnvrgApp{},
-		&CnvrgAppList{},
-	)
-
+	scheme.AddKnownTypes(SchemeGroupVersion, &CnvrgApp{}, &CnvrgAppList{})
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }
