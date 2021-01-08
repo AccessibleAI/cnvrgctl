@@ -20,42 +20,18 @@ var AppUpgradeCmd = &cobra.Command{
 		} else {
 			appUpgrade()
 		}
-		logrus.Info("done")
-
-		//prompt := promptui.Select{
-		//	Label: "Select Day",
-		//	Items: []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-		//		"Saturday", "Sunday"},
-		//}
-		//
-		//_, result, err := prompt.Run()
-		//
-		//if err != nil {
-		//	fmt.Printf("Prompt failed %v\n", err)
-		//	return
-		//}
-		//
-		//fmt.Printf("You choose %q\n", result)
+		logrus.Info("app upgrade done")
 	},
 }
 
 func appUpgrade() {
-	// check if upgrade availiable
-	// check if cnvrg app deployed
-	// check if cnvrg tenancy enabled
-	// check if there is enough compute power for upgrade
-	// get nodes
-	//upgrade.GetNodes()
+	upgrade.BackupCnvrgApp()
 	if viper.GetBool("pull-app-image") {
 		pullAppImage()
 	}
-	upgrade.BackupCnvrgApp()
-	//upgrade.WatchForDeploymentScaleToZero()
-
 	upgrade.SidekiqGracefulShutdown()
+	upgrade.RunApplicationUpgrade()
 
-	//upgrade.GetNodesMetrics()
-	//upgrade.GetCnvrgApp()
 }
 
 func pullAppImage() {

@@ -204,7 +204,40 @@ func SidekiqGracefulShutdown() {
 	go IsSidekiqScaledToZero(stopper)
 	<-stopper
 	logrus.Infof("sidekiq stopped")
+}
 
+func RunApplicationUpgrade() {
+
+	logrus.Infof("running application upgrade")
+	cnvrgApp := GetCnvrgApp()
+	cnvrgApp.Spec.CnvrgApp.ResourcesRequestEnabled = "false"
+	if cnvrgApp.Spec.CnvrgApp.Image == viper.GetString("app-image") {
+		logrus.Infof("no need to upgrade, app image already upgraded")
+		return
+	}
+	cnvrgApp.Spec.CnvrgApp.Image = viper.GetString("app-image")
+	UpdateCnvrgApp(cnvrgApp)
+
+	stopper := make(chan struct{})
+	messages := make(chan string, 100)
+	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
+	cnvrgAppFromBackup := LoadCnvrgAppFromBackup()
+
+	go startSpinner(s, "upgrade is running ", messages)
+	go WatchForPods(stopper, "app", []string{"app", "app"}, messages)
+	go WatchForDeployments(func(old, new interface{}, stopper chan struct{}) {
+		app := new.(*apps.Deployment)
+		if app.Name == cnvrgApp.Spec.CnvrgApp.SvcName {
+			if app.Spec.Template.Spec.Containers[0].Image == cnvrgApp.Spec.CnvrgApp.Image &&
+				cnvrgAppFromBackup.Spec.CnvrgApp.Replicas == app.Spec.Replicas {
+				logrus.Info("status: %v:", app.Status)
+				s.Stop()
+				close(messages)
+				close(stopper)
+			}
+		}
+	}, stopper)
+	<-stopper
 }
 
 func IsSidekiqScaledToZero(stopper chan struct{}) {
@@ -414,23 +447,6 @@ func WatchForDeployments(updateHandler updateEventHandler, stopper chan struct{}
 		return
 	}
 	<-stopper
-}
-
-func WatchForSidekiqScaleDown(old, new interface{}, stopper chan struct{}) {
-	sidekiqDown := true
-	dep := new.(*apps.Deployment)
-	logrus.Debugf("Status: %v:", dep.Status)
-
-	if dep.Name == SidekiqDeploymentName {
-		logrus.Infof("%v status: %v", dep.Name, dep.Status.ReadyReplicas)
-	}
-	if dep.Name == SearchkiqDeploymentName {
-	}
-
-	if sidekiqDown {
-		close(stopper)
-	}
-
 }
 
 func Find(slice []string, val string) (int, bool) {

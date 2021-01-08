@@ -332,6 +332,24 @@ type CnvrgAppSpec struct {
 			Image   string `json:"image"`
 		} `json:"sidekiqExporter"`
 	} `json:"monitoring"`
+	Elastalert struct {
+		Enabled       string `json:"enabled"`
+		Image         string `json:"image"`
+		Port          interface{} `json:"port"`
+		NodePort      interface{} `json:"nodePort"`
+		ContainerPort interface{} `json:"containerPort"`
+		SvcName       string `json:"svcName"`
+		StorageClass  string `json:"storageClass"`
+		RunAsUser     string `json:"runAsUser"`
+		RunAsGroup    string `json:"runAsGroup"`
+		FsGroup       string `json:"fsGroup"`
+		CPURequest    string `json:"cpuRequest"`
+		MemoryRequest string `json:"memoryRequest"`
+		StorageSize   string `json:"storageSize"`
+		CPULimit      string `json:"cpuLimit"`
+		MemoryLimit   string `json:"memoryLimit"`
+	} `json:"elastalert"`
+
 }
 
 type CnvrgAppStatus struct{}
