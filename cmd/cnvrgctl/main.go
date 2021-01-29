@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 		logrus.Debugf("kubeconfig: %v", viper.GetString("kubeconfig"))
 		logrus.Debugf("verbose: %v", viper.GetBool("verbose"))
 		logrus.Debugf("json-log: %v", viper.GetBool("json-log"))
-		logrus.Debugf("pull-app-image: %v", viper.GetBool("pull-app-image"))
+		logrus.Debugf("cache-image: %v", viper.GetBool("cache-image"))
 		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
 		logrus.Debugf("cnvrgapp-name: %v", viper.GetBool("cnvrgapp-name"))
 		logrus.Debugf("rollback: %v", viper.GetBool("rollback"))
@@ -68,7 +68,8 @@ func setupCommands() {
 	rootCmd.PersistentFlags().BoolP("json-log", "J", false, "--json-log=true|false")
 	rootCmd.PersistentFlags().StringP("cnvrgapp-name", "n", "cnvrg-app", "name of the CnvrgApp spec")
 	rootCmd.PersistentFlags().StringP("cnvrg-namespace", "S", "cnvrg", "CnvrgApp namespace")
-	upgradeCmd.PersistentFlags().BoolP("pull-app-image", "p", true, "--pull-app-image=true|false set true to pull the image on the k8s node before running the upgrade")
+	rootCmd.PersistentFlags().BoolP("dry-run", "d", false, "--dry-run=true|false")
+	upgradeCmd.PersistentFlags().BoolP("cache-image", "c", true, "--cache-image=true|false set true to pull the image on the k8s node before running the upgrade")
 	upgradeCmd.PersistentFlags().StringP("app-image", "i", "", "app image to use for upgrade")
 	upgradeCmd.PersistentFlags().BoolP("rollback", "r", false, "rollback to previous cnvrgapp")
 
@@ -92,6 +93,12 @@ func setupCommands() {
 		panic(err)
 	}
 	if err := viper.BindPFlag("cnvrg-namespace", rootCmd.PersistentFlags().Lookup("cnvrg-namespace")); err != nil {
+		panic(err)
+	}
+	if err := viper.BindPFlag("dry-run", rootCmd.PersistentFlags().Lookup("dry-run")); err != nil {
+		panic(err)
+	}
+	if err := viper.BindPFlag("cache-image", upgradeCmd.PersistentFlags().Lookup("cache-image")); err != nil {
 		panic(err)
 	}
 	if err := viper.BindPFlag("pull-app-image", upgradeCmd.PersistentFlags().Lookup("pull-app-image")); err != nil {

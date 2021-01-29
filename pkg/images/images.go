@@ -12,13 +12,11 @@ import (
 	"time"
 )
 
-func ListAppImages() (images []string) {
+func ListAppImages(username string, password string) (images []string) {
 	imagesLength := 10
 	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
 	go startSpinner(s, "fetching images list...", nil)
 	url := "https://registry-1.docker.io/"
-	username := "cnvrghelm"
-	password := "23e37770-0a2c-4111-b967-7e16e597a252"
 	hub, err := registry.New(url, username, password)
 	if err != nil {
 		logrus.Debug(err.Error())

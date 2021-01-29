@@ -49,3 +49,25 @@ func GetCnvrgApp() (cnvrgapp *cnvrgappv1.CnvrgApp) {
 	logrus.Debug(cnvrgapp)
 	return
 }
+
+func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error registering cnvrgapp CR")
+	}
+	clientSet, err := cnvrgappV1client.NewForConfigCnvrgAppUpgrade(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error creating cnvrgappv1 clientset")
+	}
+	res, err := clientSet.CnvrgAppUpgrades(viper.GetString("cnvrg-namespace")).Create(
+		context.TODO(),
+		upgradeSpec,
+		metav1.CreateOptions{})
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("error creating upgrade spec")
+	}
+	logrus.Debug(res)
+}

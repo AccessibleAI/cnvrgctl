@@ -10,6 +10,7 @@ import (
 )
 
 type CnvrgAppUpgradeInterface interface {
+	Create(ctx context.Context, cnvrgappUpgrade *cnvrgappv1.CnvrgAppUpgrade, opts metav1.CreateOptions) (*cnvrgappv1.CnvrgAppUpgrade, error)
 	List(ctx context.Context, opts metav1.ListOptions) (*cnvrgappv1.CnvrgAppUpgradeList, error)
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*cnvrgappv1.CnvrgAppUpgrade, error)
 	Update(ctx context.Context, cnvrgapp *cnvrgappv1.CnvrgAppUpgrade, opts metav1.UpdateOptions) (*cnvrgappv1.CnvrgAppUpgrade, error)
@@ -21,6 +22,21 @@ type cnvrgappupgradeClient struct {
 	restClient rest.Interface
 	ns         string
 }
+
+
+func (c *cnvrgappupgradeClient) Create(ctx context.Context, cnvrgappUpgrade *cnvrgappv1.CnvrgAppUpgrade, opts metav1.CreateOptions) (result *cnvrgappv1.CnvrgAppUpgrade, err error) {
+	result = &cnvrgappv1.CnvrgAppUpgrade{}
+	err = c.restClient.
+		Post().
+		Namespace(c.ns).
+		Resource("cnvrgappupgrades").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(cnvrgappUpgrade).
+		Do(ctx).
+		Into(result)
+	return
+}
+
 
 func (c *cnvrgappupgradeClient) List(ctx context.Context, opts metav1.ListOptions) (result *cnvrgappv1.CnvrgAppUpgradeList, err error) {
 	result = &cnvrgappv1.CnvrgAppUpgradeList{}
