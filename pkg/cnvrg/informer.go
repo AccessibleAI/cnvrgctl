@@ -1,4 +1,4 @@
-package cnvrgapp
+package cnvrg
 
 import (
 	"context"

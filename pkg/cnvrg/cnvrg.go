@@ -1,14 +1,14 @@
-package cnvrgapp
+package cnvrg
 
 import (
-	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
+	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	cnvrgappV1client "github.com/cnvrgctl/pkg/cnvrgapp/clientset/v1"
+	cnvrgV1client "github.com/cnvrgctl/pkg/cnvrg/clientset/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"context"
 )
@@ -34,7 +34,7 @@ func GetCnvrgApp() (cnvrgapp *cnvrgappv1.CnvrgApp) {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error registering cnvrgapp CR")
 	}
-	clientSet, err := cnvrgappV1client.NewForConfigCnvrgApp(config)
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgApp(config)
 	if err != nil {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error creating cnvrgappv1 clientset")
@@ -56,7 +56,7 @@ func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error registering cnvrgapp CR")
 	}
-	clientSet, err := cnvrgappV1client.NewForConfigCnvrgAppUpgrade(config)
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
 	if err != nil {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error creating cnvrgappv1 clientset")

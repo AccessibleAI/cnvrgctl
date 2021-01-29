@@ -33,7 +33,7 @@ func appUpgrade() {
 		b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
 		logrus.Info("\n" + string(b))
 	}
-	cnvrgapp.CreateCnvrgAppUpgrade(upgradeSpec)
+	cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
 
 }
 
@@ -42,7 +42,7 @@ func getImageForUpgrade() string {
 	if appImage != "" {
 		return appImage
 	}
-	cnvrgSpec := cnvrgapp.GetCnvrgApp()
+	cnvrgSpec := cnvrg.GetCnvrgApp()
 	logrus.Debug(cnvrgSpec)
 	if cnvrgSpec.Spec.CnvrgApp.Conf.Registry.URL != "docker.io" {
 		logrus.Fatalf("can't list images, docker registry: %v not supported. explicitly provide app image with --app-image flag",
