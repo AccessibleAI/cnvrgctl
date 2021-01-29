@@ -3,353 +3,424 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
+// controller-gen object paths=./...
 type CnvrgAppSpec struct {
-	Debug         string `json:"debug"`
-	DryRun        string `json:"dryRun"`
-	DumpDir       string `json:"dumpDir"`
-	ClusterDomain string `json:"clusterDomain"`
-	Orchestrator  string `json:"orchestrator"`
-	PrivilegedSa  string `json:"privilegedSa"`
-	SecurityMode  string `json:"securityMode"`
-	IngressType   string `json:"ingressType"`
-	UseHTTPS      string `json:"useHttps"`
-	Tenancy       struct {
-		Enabled        string `json:"enabled"`
-		DedicatedNodes string `json:"dedicatedNodes"`
-		Cnvrg          struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		} `json:"cnvrg"`
-	} `json:"tenancy"`
-	AppConfigs struct {
-		CnvrgStorageUseIamRole string `json:"cnvrgStorageUseIamRole"`
-		FeatureFlags           string `json:"featureFlags"`
-		SMTP                   struct {
-			Domain   string      `json:"domain"`
-			Password string      `json:"password"`
-			Port     interface{} `json:"port"`
-			Server   string      `json:"server"`
-			Username string      `json:"username"`
-		} `json:"smtp"`
-	} `json:"appConfigs"`
-	AppSecrets struct {
-		CheckJobExpiration           string `json:"checkJobExpiration"`
-		CnvrgStorageAccessKey        string `json:"cnvrgStorageAccessKey"`
-		CnvrgStorageAzureAccessKey   string `json:"cnvrgStorageAzureAccessKey"`
-		CnvrgStorageAzureAccountName string `json:"cnvrgStorageAzureAccountName"`
-		CnvrgStorageAzureContainer   string `json:"cnvrgStorageAzureContainer"`
-		CnvrgStorageBucket           string `json:"cnvrgStorageBucket"`
-		CnvrgStorageProject          string `json:"cnvrgStorageProject"`
-		CnvrgStorageRegion           string `json:"cnvrgStorageRegion"`
-		CnvrgStorageSecretKey        string `json:"cnvrgStorageSecretKey"`
-		CnvrgStorageType             string `json:"cnvrgStorageType"`
-		DefaultComputeConfig         string `json:"defaultComputeConfig"`
-		DefaultComputeName           string `json:"defaultComputeName"`
-		ExtractTagsFromCmd           string `json:"extractTagsFromCmd"`
-		MinioSseMasterKey            string `json:"minioSseMasterKey"`
-		PassengerAppEnv              string `json:"passengerAppEnv"`
-		RailsEnv                     string `json:"railsEnv"`
-		RunJobsOnSelfCluster         string `json:"runJobsOnSelfCluster"`
-		SecretKeyBase                string `json:"secretKeyBase"`
-		SentryURL                    string `json:"sentryUrl"`
-		StsIv                        string `json:"stsIv"`
-		StsKey                       string `json:"stsKey"`
-		UseStdout                    string `json:"useStdout"`
-	} `json:"appSecrets"`
-	Autoscaler struct {
-		Enabled string `json:"enabled"`
-	} `json:"autoscaler"`
 	CnvrgApp struct {
-		CPU                       string      `json:"cpu"`
-		CustomAgentTag            string      `json:"customAgentTag"`
-		Edition                   string      `json:"edition"`
-		Enabled                   string      `json:"enabled"`
-		Image                     string      `json:"image"`
-		Intercom                  string      `json:"intercom"`
-		Memory                    string      `json:"memory"`
-		NodePort                  interface{} `json:"nodePort"`
-		Port                      interface{} `json:"port"`
-		Replicas                  interface{} `json:"replicas"`
-		SidekiqCPU                string      `json:"sidekiqCpu"`
-		SidekiqMemory             string      `json:"sidekiqMemory"`
-		SidekiqReplicas           interface{} `json:"sidekiqReplicas"`
-		SidekiqSearchkickCPU      string      `json:"sidekiqSearchkickCpu"`
-		SidekiqSearchkickMemory   string      `json:"sidekiqSearchkickMemory"`
-		SidekiqSearchkickReplicas interface{} `json:"sidekiqSearchkickReplicas"`
-		PassengerMaxPoolSize      interface{} `json:"passengerMaxPoolSize"`
-		SvcName                   string      `json:"svcName"`
-		ResourcesRequestEnabled   string      `json:"resourcesRequestEnabled"`
-		EnableReadinessProbe      string      `json:"enableReadinessProbe"`
-		Fixpg                     string      `json:"fixpg"`
-		sidekiqPrestopHook        struct {
-			Enabled     string      `json:"enabled"`
-			KillTimeout interface{} `json:"killTimeout"`
-		}
-	} `json:"cnvrgApp"`
-	CnvrgRouter struct {
-		Enabled  string      `json:"enabled"`
-		Image    string      `json:"image"`
-		NodePort interface{} `json:"nodePort"`
-		Port     interface{} `json:"port"`
-		SvcName  string      `json:"svcName"`
-	} `json:"cnvrgRouter"`
-	Conf struct {
-		Enabled             string `json:"enabled"`
-		GcpKeyfileMountPath string `json:"gcpKeyfileMountPath"`
-		GcpKeyfileName      string `json:"gcpKeyfileName"`
-		GcpStorageSecret    string `json:"gcpStorageSecret"`
-	} `json:"conf"`
-	Es struct {
-		CPULimit      string      `json:"cpuLimit"`
-		CPURequest    string      `json:"cpuRequest"`
-		Enabled       string      `json:"enabled"`
-		FsGroup       string      `json:"fsGroup"`
-		Image         string      `json:"image"`
-		JavaOpts      string      `json:"javaOpts"`
-		MaxMapImage   string      `json:"maxMapImage"`
-		MemoryLimit   string      `json:"memoryLimit"`
-		MemoryRequest string      `json:"memoryRequest"`
-		NodePort      interface{} `json:"nodePort"`
-		PatchEsNodes  string      `json:"patchEsNodes"`
-		Port          interface{} `json:"port"`
-		RunAsGroup    string      `json:"runAsGroup"`
-		RunAsUser     string      `json:"runAsUser"`
-		StorageClass  string      `json:"storageClass"`
-		StorageSize   string      `json:"storageSize"`
-		SvcName       string      `json:"svcName"`
-	} `json:"es"`
-	Fluentd struct {
-		ContainersPath string `json:"containersPath"`
-		CPURequest     string `json:"cpuRequest"`
-		Enabled        string `json:"enabled"`
-		Image          string `json:"image"`
-		JournalPath    string `json:"journalPath"`
-		Journald       string `json:"journald"`
-		MemoryLimit    string `json:"memoryLimit"`
-		MemoryRequest  string `json:"memoryRequest"`
-	} `json:"fluentd"`
-	Hostpath struct {
-		CPULimit         string `json:"cpuLimit"`
-		CPURequest       string `json:"cpuRequest"`
-		Enabled          string `json:"enabled"`
-		HostPath         string `json:"hostPath"`
-		Image            string `json:"image"`
-		MemoryLimit      string `json:"memoryLimit"`
-		MemoryRequest    string `json:"memoryRequest"`
-		NodeName         string `json:"nodeName"`
-		StorageClassName string `json:"storageClassName"`
-	} `json:"hostpath"`
-	HTTPS struct {
-		Cert                   string `json:"cert"`
-		CertSecret             string `json:"certSecret"`
-		Enabled                string `json:"enabled"`
-		Key                    string `json:"key"`
-		UseWildcardCertificate string `json:"useWildcardCertificate"`
-	} `json:"https"`
-	Ingress struct {
-		Enabled         string      `json:"enabled"`
-		PerTryTimeout   string      `json:"perTryTimeout"`
-		RetriesAttempts interface{} `json:"retriesAttempts"`
-	} `json:"ingress"`
-	Istio struct {
-		Enabled               string `json:"enabled"`
-		ExternalIP            string `json:"externalIp"`
-		GwName                string `json:"gwName"`
-		Hub                   string `json:"hub"`
-		IngressSvcAnnotations string `json:"ingressSvcAnnotations"`
-		MixerImage            string `json:"mixerImage"`
-		OperatorImage         string `json:"operatorImage"`
-		PilotImage            string `json:"pilotImage"`
-		ProxyImage            string `json:"proxyImage"`
-		Tag                   string `json:"tag"`
-	} `json:"istio"`
-	Kibana struct {
-		CPULimit      string      `json:"cpuLimit"`
-		CPURequest    string      `json:"cpuRequest"`
-		Enabled       string      `json:"enabled"`
-		Image         string      `json:"image"`
-		MemoryLimit   string      `json:"memoryLimit"`
-		MemoryRequest string      `json:"memoryRequest"`
-		NodePort      interface{} `json:"nodePort"`
-		Port          interface{} `json:"port"`
-		SvcName       string      `json:"svcName"`
-	} `json:"kibana"`
-	Minio struct {
-		Enabled       string      `json:"enabled"`
-		Image         string      `json:"image"`
-		MemoryRequest string      `json:"memoryRequest"`
-		NodePort      interface{} `json:"nodePort"`
-		Port          interface{} `json:"port"`
-		Replicas      interface{} `json:"replicas"`
-		SharedStorage struct {
-			Enabled          string `json:"enabled"`
-			NfsServer        string `json:"nfsServer"`
-			Path             string `json:"path"`
-			StorageClassName string `json:"storageClassName"`
-		} `json:"sharedStorage"`
-		StorageClass string `json:"storageClass"`
-		StorageSize  string `json:"storageSize"`
-		SvcName      string `json:"svcName"`
-	} `json:"minio"`
-	Mpi struct {
-		Enabled string `json:"enabled"`
-	} `json:"mpi"`
-	Nfs struct {
-		CPULimit         string `json:"cpuLimit"`
-		CPURequest       string `json:"cpuRequest"`
-		Enabled          string `json:"enabled"`
-		Image            string `json:"image"`
-		MemoryLimit      string `json:"memoryLimit"`
-		MemoryRequest    string `json:"memoryRequest"`
-		Path             string `json:"path"`
-		Provisioner      string `json:"provisioner"`
-		Server           string `json:"server"`
-		StorageClassName string `json:"storageClassName"`
-	} `json:"nfs"`
-	Nvidiadp struct {
-		Enabled      string `json:"enabled"`
-		Image        string `json:"image"`
-		NodeSelector struct {
-			Enabled string `json:"enabled"`
-			Key     string `json:"key"`
-			Value   string `json:"value"`
-		} `json:"nodeSelector"`
-	} `json:"nvidiadp"`
-	Pg struct {
-		CPURequest    string      `json:"cpuRequest"`
-		Dbname        string      `json:"dbname"`
-		Enabled       string      `json:"enabled"`
-		FsGroup       string      `json:"fsGroup"`
-		Image         string      `json:"image"`
-		MemoryRequest string      `json:"memoryRequest"`
-		Pass          string      `json:"pass"`
-		Port          interface{} `json:"port"`
-		RunAsGroup    string      `json:"runAsGroup"`
-		RunAsUser     string      `json:"runAsUser"`
-		StorageClass  string      `json:"storageClass"`
-		StorageSize   string      `json:"storageSize"`
-		SvcName       string      `json:"svcName"`
-		User          string      `json:"user"`
-	} `json:"pg"`
-	PgBackup struct {
-		CronTime     string `json:"cronTime"`
-		Enabled      string `json:"enabled"`
-		Name         string `json:"name"`
-		Path         string `json:"path"`
-		ScriptPath   string `json:"scriptPath"`
-		StorageClass string `json:"storageClass"`
-		StorageSize  string `json:"storageSize"`
-	} `json:"pgBackup"`
-	Rbac struct {
-		Role               string `json:"role"`
-		RoleBindingName    string `json:"roleBindingName"`
-		ServiceAccountName string `json:"serviceAccountName"`
-	} `json:"rbac"`
-	Redis struct {
-		Enabled string `json:"enabled"`
-		Image   string `json:"image"`
-		Limits  struct {
-			CPU    string `json:"cpu"`
-			Memory string `json:"memory"`
-		} `json:"limits"`
-		Port     interface{} `json:"port"`
-		Requests struct {
-			CPU    string `json:"cpu"`
-			Memory string `json:"memory"`
-		} `json:"requests"`
-		SvcName string `json:"svcName"`
-	} `json:"redis"`
-	Registry struct {
-		Name     string `json:"name"`
-		Password string `json:"password"`
-		URL      string `json:"url"`
-		User     string `json:"user"`
-	} `json:"registry"`
-	Seeder struct {
-		Image   string `json:"image"`
-		SeedCmd string `json:"seedCmd"`
-	} `json:"seeder"`
-	Monitoring struct {
-		Enabled      string `json:"enabled"`
-		DcgmExporter struct {
+		Mpi          struct {
+			Enabled              string `json:"enabled"`
+			Image                string `json:"image"`
+			KubectlDeliveryImage string `json:"kubectlDeliveryImage"`
+			Registry             struct {
+				Name     string `json:"name"`
+				URL      string `json:"url"`
+				User     string `json:"user"`
+				Password string `json:"password"`
+			} `json:"registry"`
+		} `json:"mpi"`
+		Redis struct {
 			Enabled string `json:"enabled"`
 			Image   string `json:"image"`
-			Port    string `json:"port"`
-		} `json:"dcgmExporter"`
-		DefaultServiceMonitors struct {
-			Enabled string `json:"enabled"`
-		} `json:"defaultServiceMonitors"`
-		Grafana struct {
-			Enabled  string `json:"enabled"`
-			Image    string `json:"image"`
-			NodePort string `json:"nodePort"`
-			Port     string `json:"port"`
-			SvcName  string `json:"svcName"`
-		} `json:"grafana"`
-		IdleMetricsExporter struct {
-			Enabled string `json:"enabled"`
-		} `json:"idleMetricsExporter"`
-		KubeStateMetrics struct {
-			Enabled string `json:"enabled"`
-			Image   string `json:"image"`
-		} `json:"kubeStateMetrics"`
-		MetricsServer struct {
-			Enabled string `json:"enabled"`
-			Image   string `json:"image"`
-		} `json:"metricsServer"`
-		MinioExporter struct {
-			Enabled string `json:"enabled"`
-			Image   string `json:"image"`
-		} `json:"minioExporter"`
-		NodeExporter struct {
-			Enabled string `json:"enabled"`
-			Image   string `json:"image"`
-			Port    string `json:"port"`
-		} `json:"nodeExporter"`
-		Prometheus struct {
-			CPURequest    string `json:"cpuRequest"`
-			Enabled       string `json:"enabled"`
-			Image         string `json:"image"`
-			MemoryRequest string `json:"memoryRequest"`
-			NodePort      string `json:"nodePort"`
-			Port          string `json:"port"`
-			StorageClass  string `json:"storageClass"`
-			StorageSize   string `json:"storageSize"`
-			SvcName       string `json:"svcName"`
-		} `json:"prometheus"`
-		PrometheusOperator struct {
+			SvcName string `json:"svcName"`
+			Port    int    `json:"port"`
+			Limits  struct {
+				CPU    int    `json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"limits"`
+			Requests struct {
+				CPU    string `json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"requests"`
+		} `json:"redis"`
+		Networking struct {
+			Enabled     string `json:"enabled"`
+			IngressType string `json:"ingressType"`
+			HTTPS       struct {
+				Enabled    string `json:"enabled"`
+				Cert       string `json:"cert"`
+				Key        string `json:"key"`
+				CertSecret string `json:"certSecret"`
+			} `json:"https"`
+			Istio struct {
+				Enabled                  string `json:"enabled"`
+				OperatorImage            string `json:"operatorImage"`
+				Hub                      string `json:"hub"`
+				Tag                      string `json:"tag"`
+				ProxyImage               string `json:"proxyImage"`
+				MixerImage               string `json:"mixerImage"`
+				PilotImage               string `json:"pilotImage"`
+				GwName                   string `json:"gwName"`
+				ExternalIP               string `json:"externalIp"`
+				IngressSvcAnnotations    string `json:"ingressSvcAnnotations"`
+				IngressSvcExtraPorts     string `json:"ingressSvcExtraPorts"`
+				LoadBalancerSourceRanges string `json:"loadBalancerSourceRanges"`
+			} `json:"istio"`
+			Ingress struct {
+				Enabled         string `json:"enabled"`
+				Timeout         string `json:"timeout"`
+				RetriesAttempts int    `json:"retriesAttempts"`
+				PerTryTimeout   string `json:"perTryTimeout"`
+			} `json:"ingress"`
+		} `json:"networking"`
+		Vpa struct {
 			Enabled string `json:"enabled"`
 			Images  struct {
-				ConfigReloaderImage           string `json:"configReloaderImage"`
-				KubeRbacProxyImage            string `json:"kubeRbacProxyImage"`
-				OperatorImage                 string `json:"operatorImage"`
-				PrometheusConfigReloaderImage string `json:"prometheusConfigReloaderImage"`
+				AdmissionImage   string `json:"admissionImage"`
+				RecommenderImage string `json:"recommenderImage"`
+				UpdaterImage     string `json:"updaterImage"`
 			} `json:"images"`
-		} `json:"prometheusOperator"`
-		SidekiqExporter struct {
+		} `json:"vpa"`
+		Minio struct {
+			Enabled       string `json:"enabled"`
+			Replicas      int    `json:"replicas"`
+			Image         string `json:"image"`
+			Port          int    `json:"port"`
+			StorageSize   string `json:"storageSize"`
+			SvcName       string `json:"svcName"`
+			NodePort      int    `json:"nodePort"`
+			StorageClass  string `json:"storageClass"`
+			CPURequest    int    `json:"cpuRequest"`
+			MemoryRequest string `json:"memoryRequest"`
+			SharedStorage struct {
+				Enabled        string `json:"enabled"`
+				ConsistentHash struct {
+					Key   string `json:"key"`
+					Value string `json:"value"`
+				} `json:"consistentHash"`
+			} `json:"sharedStorage"`
+		} `json:"minio"`
+		Storage struct {
+			Enabled         string `json:"enabled"`
+			CcpStorageClass string `json:"ccpStorageClass"`
+			Hostpath        struct {
+				Enabled          string `json:"enabled"`
+				Image            string `json:"image"`
+				HostPath         string `json:"hostPath"`
+				StorageClassName string `json:"storageClassName"`
+				NodeName         string `json:"nodeName"`
+				CPURequest       string `json:"cpuRequest"`
+				MemoryRequest    string `json:"memoryRequest"`
+				CPULimit         string `json:"cpuLimit"`
+				MemoryLimit      string `json:"memoryLimit"`
+				ReclaimPolicy    string `json:"reclaimPolicy"`
+				DefaultSc        string `json:"defaultSc"`
+			} `json:"hostpath"`
+			Nfs struct {
+				Enabled          string `json:"enabled"`
+				Image            string `json:"image"`
+				Provisioner      string `json:"provisioner"`
+				StorageClassName string `json:"storageClassName"`
+				Server           string `json:"server"`
+				Path             string `json:"path"`
+				CPURequest       string `json:"cpuRequest"`
+				MemoryRequest    string `json:"memoryRequest"`
+				CPULimit         string `json:"cpuLimit"`
+				MemoryLimit      string `json:"memoryLimit"`
+				ReclaimPolicy    string `json:"reclaimPolicy"`
+				DefaultSc        string `json:"defaultSc"`
+			} `json:"nfs"`
+		} `json:"storage"`
+		Pg struct {
+			Enabled        string `json:"enabled"`
+			SecretName     string `json:"secretName"`
+			Image          string `json:"image"`
+			Port           int    `json:"port"`
+			StorageSize    string `json:"storageSize"`
+			SvcName        string `json:"svcName"`
+			Dbname         string `json:"dbname"`
+			Pass           string `json:"pass"`
+			User           string `json:"user"`
+			RunAsUser      int    `json:"runAsUser"`
+			FsGroup        int    `json:"fsGroup"`
+			StorageClass   string `json:"storageClass"`
+			CPURequest     int    `json:"cpuRequest"`
+			MemoryRequest  string `json:"memoryRequest"`
+			MaxConnections int    `json:"maxConnections"`
+			SharedBuffers  string `json:"sharedBuffers"`
+		} `json:"pg"`
+		PgBackup struct {
+			StorageSize  string `json:"storageSize"`
+			Enabled      string `json:"enabled"`
+			Name         string `json:"name"`
+			Path         string `json:"path"`
+			ScriptPath   string `json:"script_path"`
+			StorageClass string `json:"storageClass"`
+			CronTime     string `json:"cronTime"`
+		} `json:"pg_backup"`
+		CnvrgApp struct {
+			Replicas                int    `json:"replicas"`
+			Enabled                 string `json:"enabled"`
+			Image                   string `json:"image"`
+			Port                    int    `json:"port"`
+			CPU                     int    `json:"cpu"`
+			Memory                  string `json:"memory"`
+			SvcName                 string `json:"svcName"`
+			Fixpg                   string `json:"fixpg"`
+			NodePort                int    `json:"nodePort"`
+			PassengerMaxPoolSize    int    `json:"passengerMaxPoolSize"`
+			EnableReadinessProbe    string `json:"enableReadinessProbe"`
+			InitialDelaySeconds     int    `json:"initialDelaySeconds"`
+			ReadinessPeriodSeconds  int    `json:"readinessPeriodSeconds"`
+			ReadinessTimeoutSeconds int    `json:"readinessTimeoutSeconds"`
+			FailureThreshold        int    `json:"failureThreshold"`
+			ResourcesRequestEnabled string `json:"resourcesRequestEnabled"`
+			Sidekiq                 struct {
+				Enabled  string `json:"enabled"`
+				Split    string `json:"split"`
+				CPU      string `json:"cpu"`
+				Memory   string `json:"memory"`
+				Replicas int    `json:"replicas"`
+			} `json:"sidekiq"`
+			Searchkiq struct {
+				Enabled  string `json:"enabled"`
+				CPU      string `json:"cpu"`
+				Memory   string `json:"memory"`
+				Replicas int    `json:"replicas"`
+			} `json:"searchkiq"`
+			Systemkiq struct {
+				Enabled  string `json:"enabled"`
+				CPU      string `json:"cpu"`
+				Memory   string `json:"memory"`
+				Replicas int    `json:"replicas"`
+			} `json:"systemkiq"`
+			KiqPrestopHook struct {
+				Enabled     string `json:"enabled"`
+				KillTimeout int    `json:"killTimeout"`
+			} `json:"kiqPrestopHook"`
+			Hyper struct {
+				Enabled                 string `json:"enabled"`
+				Image                   string `json:"image"`
+				Port                    int    `json:"port"`
+				Replicas                int    `json:"replicas"`
+				NodePort                int    `json:"nodePort"`
+				SvcName                 string `json:"svcName"`
+				Token                   string `json:"token"`
+				CPURequest              string `json:"cpuRequest"`
+				MemoryRequest           string `json:"memoryRequest"`
+				CPULimit                int    `json:"cpuLimit"`
+				MemoryLimit             string `json:"memoryLimit"`
+				EnableReadinessProbe    string `json:"enableReadinessProbe"`
+				ReadinessPeriodSeconds  int    `json:"readinessPeriodSeconds"`
+				ReadinessTimeoutSeconds int    `json:"readinessTimeoutSeconds"`
+			} `json:"hyper"`
+			Seeder struct {
+				Image           string `json:"image"`
+				SeedCmd         string `json:"seedCmd"`
+				CreateBucketCmd string `json:"createBucketCmd"`
+			} `json:"seeder"`
+			Conf struct {
+				GcpStorageSecret             string `json:"gcpStorageSecret"`
+				GcpKeyfileMountPath          string `json:"gcpKeyfileMountPath"`
+				GcpKeyfileName               string `json:"gcpKeyfileName"`
+				JobsStorageClass             string `json:"jobsStorageClass"`
+				FeatureFlags                 string `json:"featureFlags"`
+				SentryURL                    string `json:"sentryUrl"`
+				SecretKeyBase                string `json:"secretKeyBase"`
+				StsIv                        string `json:"stsIv"`
+				StsKey                       string `json:"stsKey"`
+				RedisURL                     string `json:"redisUrl"`
+				PassengerAppEnv              string `json:"passengerAppEnv"`
+				RailsEnv                     string `json:"railsEnv"`
+				RunJobsOnSelfCluster         string `json:"runJobsOnSelfCluster"`
+				DefaultComputeConfig         string `json:"defaultComputeConfig"`
+				DefaultComputeName           string `json:"defaultComputeName"`
+				UseStdout                    string `json:"useStdout"`
+				ExtractTagsFromCmd           string `json:"extractTagsFromCmd"`
+				CheckJobExpiration           string `json:"checkJobExpiration"`
+				CnvrgStorageType             string `json:"cnvrgStorageType"`
+				CnvrgStorageBucket           string `json:"cnvrgStorageBucket"`
+				CnvrgStorageAccessKey        string `json:"cnvrgStorageAccessKey"`
+				CnvrgStorageSecretKey        string `json:"cnvrgStorageSecretKey"`
+				CnvrgStorageEndpoint         string `json:"cnvrgStorageEndpoint"`
+				MinioSseMasterKey            string `json:"minioSseMasterKey"`
+				CnvrgStorageAzureAccessKey   string `json:"cnvrgStorageAzureAccessKey"`
+				CnvrgStorageAzureAccountName string `json:"cnvrgStorageAzureAccountName"`
+				CnvrgStorageAzureContainer   string `json:"cnvrgStorageAzureContainer"`
+				CnvrgStorageRegion           string `json:"cnvrgStorageRegion"`
+				CnvrgStorageProject          string `json:"cnvrgStorageProject"`
+				CustomAgentTag               string `json:"customAgentTag"`
+				Intercom                     string `json:"intercom"`
+				CnvrgJobUID                  string `json:"cnvrgJobUid"`
+				Ldap                         struct {
+					Enabled       string `json:"enabled"`
+					Host          string `json:"host"`
+					Port          string `json:"port"`
+					Account       string `json:"account"`
+					Base          string `json:"base"`
+					AdminUser     string `json:"adminUser"`
+					AdminPassword string `json:"adminPassword"`
+					Ssl           string `json:"ssl"`
+				} `json:"ldap"`
+				Registry struct {
+					Name     string `json:"name"`
+					URL      string `json:"url"`
+					User     string `json:"user"`
+					Password string `json:"password"`
+				} `json:"registry"`
+				Rbac struct {
+					Role               string `json:"role"`
+					ServiceAccountName string `json:"serviceAccountName"`
+					RoleBindingName    string `json:"roleBindingName"`
+				} `json:"rbac"`
+				SMTP struct {
+					Server   string `json:"server"`
+					Port     string `json:"port"`
+					Username string `json:"username"`
+					Password string `json:"password"`
+					Domain   string `json:"domain"`
+				} `json:"smtp"`
+			} `json:"conf"`
+			CnvrgRouter struct {
+				Enabled  string `json:"enabled"`
+				Image    string `json:"image"`
+				SvcName  string `json:"svcName"`
+				NodePort int    `json:"nodePort"`
+				Port     int    `json:"port"`
+			} `json:"cnvrgRouter"`
+		} `json:"cnvrgApp"`
+		Monitoring struct {
+			Enabled            string `json:"enabled"`
+			PrometheusOperator struct {
+				Enabled string `json:"enabled"`
+				Images  struct {
+					OperatorImage                 string `json:"operatorImage"`
+					ConfigReloaderImage           string `json:"configReloaderImage"`
+					PrometheusConfigReloaderImage string `json:"prometheusConfigReloaderImage"`
+					KubeRbacProxyImage            string `json:"kubeRbacProxyImage"`
+				} `json:"images"`
+			} `json:"prometheusOperator"`
+			Prometheus struct {
+				Enabled       string `json:"enabled"`
+				Image         string `json:"image"`
+				CPURequest    int    `json:"cpuRequest"`
+				MemoryRequest string `json:"memoryRequest"`
+				SvcName       string `json:"svcName"`
+				Port          int    `json:"port"`
+				NodePort      int    `json:"nodePort"`
+				StorageSize   string `json:"storageSize"`
+				StorageClass  string `json:"storageClass"`
+			} `json:"prometheus"`
+			NodeExporter struct {
+				Enabled string `json:"enabled"`
+				Port    int    `json:"port"`
+				Image   string `json:"image"`
+			} `json:"nodeExporter"`
+			KubeStateMetrics struct {
+				Enabled string `json:"enabled"`
+				Image   string `json:"image"`
+			} `json:"kubeStateMetrics"`
+			Grafana struct {
+				Enabled  string `json:"enabled"`
+				Image    string `json:"image"`
+				SvcName  string `json:"svcName"`
+				Port     int    `json:"port"`
+				NodePort int    `json:"nodePort"`
+			} `json:"grafana"`
+			DefaultServiceMonitors struct {
+				Enabled string `json:"enabled"`
+			} `json:"defaultServiceMonitors"`
+			SidekiqExporter struct {
+				Enabled string `json:"enabled"`
+				Image   string `json:"image"`
+			} `json:"sidekiqExporter"`
+			MinioExporter struct {
+				Enabled string `json:"enabled"`
+				Image   string `json:"image"`
+			} `json:"minioExporter"`
+			DcgmExporter struct {
+				Enabled string `json:"enabled"`
+				Image   string `json:"image"`
+				Port    int    `json:"port"`
+			} `json:"dcgmExporter"`
+			IdleMetricsExporter struct {
+				Enabled string `json:"enabled"`
+			} `json:"idleMetricsExporter"`
+			MetricsServer struct {
+				Enabled string `json:"enabled"`
+				Image   string `json:"image"`
+			} `json:"metricsServer"`
+		} `json:"monitoring"`
+		Nvidiadp struct {
+			Enabled      string `json:"enabled"`
+			Image        string `json:"image"`
+			NodeSelector struct {
+				Enabled string `json:"enabled"`
+				Key     string `json:"key"`
+				Value   string `json:"value"`
+			} `json:"nodeSelector"`
+		} `json:"nvidiadp"`
+		Logging struct {
 			Enabled string `json:"enabled"`
-			Image   string `json:"image"`
-		} `json:"sidekiqExporter"`
-	} `json:"monitoring"`
-	Elastalert struct {
-		Enabled       string `json:"enabled"`
-		Image         string `json:"image"`
-		Port          interface{} `json:"port"`
-		NodePort      interface{} `json:"nodePort"`
-		ContainerPort interface{} `json:"containerPort"`
-		SvcName       string `json:"svcName"`
-		StorageClass  string `json:"storageClass"`
-		RunAsUser     string `json:"runAsUser"`
-		RunAsGroup    string `json:"runAsGroup"`
-		FsGroup       string `json:"fsGroup"`
-		CPURequest    string `json:"cpuRequest"`
-		MemoryRequest string `json:"memoryRequest"`
-		StorageSize   string `json:"storageSize"`
-		CPULimit      string `json:"cpuLimit"`
-		MemoryLimit   string `json:"memoryLimit"`
-	} `json:"elastalert"`
-
+			Es      struct {
+				Enabled       string `json:"enabled"`
+				Image         string `json:"image"`
+				MaxMapImage   string `json:"maxMapImage"`
+				Port          string `json:"port"`
+				StorageSize   string `json:"storageSize"`
+				SvcName       string `json:"svcName"`
+				RunAsUser     int    `json:"runAsUser"`
+				FsGroup       int    `json:"fsGroup"`
+				PatchEsNodes  string `json:"patchEsNodes"`
+				NodePort      int    `json:"nodePort"`
+				StorageClass  string `json:"storageClass"`
+				CPURequest    int    `json:"cpuRequest"`
+				MemoryRequest string `json:"memoryRequest"`
+				CPULimit      int    `json:"cpuLimit"`
+				MemoryLimit   string `json:"memoryLimit"`
+				JavaOpts      string `json:"javaOpts"`
+			} `json:"es"`
+			Elastalert struct {
+				Enabled       string `json:"enabled"`
+				Image         string `json:"image"`
+				Port          string `json:"port"`
+				NodePort      int    `json:"nodePort"`
+				ContainerPort string `json:"containerPort"`
+				StorageSize   string `json:"storageSize"`
+				SvcName       string `json:"svcName"`
+				StorageClass  string `json:"storageClass"`
+				CPURequest    string `json:"cpuRequest"`
+				MemoryRequest string `json:"memoryRequest"`
+				CPULimit      string `json:"cpuLimit"`
+				MemoryLimit   string `json:"memoryLimit"`
+				RunAsUser     int    `json:"runAsUser"`
+				FsGroup       int    `json:"fsGroup"`
+			} `json:"elastalert"`
+			Fluentd struct {
+				Enabled        string `json:"enabled"`
+				Image          string `json:"image"`
+				JournalPath    string `json:"journalPath"`
+				ContainersPath string `json:"containersPath"`
+				Journald       string `json:"journald"`
+				CPURequest     string `json:"cpuRequest"`
+				MemoryRequest  string `json:"memoryRequest"`
+				MemoryLimit    string `json:"memoryLimit"`
+			} `json:"fluentd"`
+			Kibana struct {
+				Enabled       string `json:"enabled"`
+				SvcName       string `json:"svcName"`
+				Port          int    `json:"port"`
+				Image         string `json:"image"`
+				NodePort      int    `json:"nodePort"`
+				CPURequest    string `json:"cpuRequest"`
+				MemoryRequest string `json:"memoryRequest"`
+				CPULimit      int    `json:"cpuLimit"`
+				MemoryLimit   string `json:"memoryLimit"`
+			} `json:"kibana"`
+		} `json:"logging"`
+		Debug         string `json:"debug"`
+		DumpDir       string `json:"dumpDir"`
+		DryRun        string `json:"dryRun"`
+		ClusterDomain string `json:"clusterDomain"`
+		HTTPScheme    string `json:"httpScheme"`
+		Otags         string `json:"otags"`
+		Tenancy       struct {
+			Enabled        string `json:"enabled"`
+			DedicatedNodes string `json:"dedicatedNodes"`
+			Cnvrg          struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"cnvrg"`
+		} `json:"tenancy"`
+	} `json:"cnvrgApp"`
 }
 
 type CnvrgAppStatus struct{}
@@ -369,3 +440,4 @@ type CnvrgAppList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []CnvrgApp `json:"items"`
 }
+

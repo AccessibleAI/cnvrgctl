@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/cnvrgctl/cmd/cnvrgctl/upgrade"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,11 +17,11 @@ var rootCmd = &cobra.Command{
 	Short: "cnvrgctl - command line tool for managing cnvrg stack",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// app-image is required only if rollback flag not set
-		if !viper.GetBool("rollback") {
-			if err := upgradeCmd.MarkFlagRequired("app-image"); err != nil {
-				panic(err)
-			}
-		}
+		//if !viper.GetBool("rollback") {
+		//	if err := upgradeCmd.MarkFlagRequired("app-image"); err != nil {
+		//		panic(err)
+		//	}
+		//}
 		// Setup logging
 		setupLogging()
 		logrus.Debugf("kubeconfig: %v", viper.GetString("kubeconfig"))
@@ -77,7 +77,7 @@ func setupCommands() {
 		kubeconfigDefaultLocation = filepath.Join(home, ".kube", "config")
 	}
 	rootCmd.PersistentFlags().String("kubeconfig", kubeconfigDefaultLocation, "absolute path to the kubeconfig file")
-	upgradeCmd.AddCommand(upgrade.AppUpgradeCmd)
+	upgradeCmd.AddCommand(AppUpgradeCmd)
 	rootCmd.AddCommand(upgradeCmd)
 	if err := viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
 		panic(err)
