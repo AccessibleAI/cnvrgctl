@@ -1,6 +1,7 @@
 package cnvrg
 
 import (
+	"fmt"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -51,15 +52,20 @@ func GetCnvrgApp() (cnvrgapp *cnvrgappv1.CnvrgApp) {
 }
 
 func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
+	ok, msg := ableToUpgrade()
+	if ok == false {
+		logrus.Fatal(msg)
+	}
+
 	config, _ := getK8SDefaultClient()
 	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("Error registering cnvrgapp CR")
+		logrus.Fatal("error registering cnvrgapp CR")
 	}
 	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
 	if err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("Error creating cnvrgappv1 clientset")
+		logrus.Fatal("error creating cnvrgappv1 clientset")
 	}
 	res, err := clientSet.CnvrgAppUpgrades(viper.GetString("cnvrg-namespace")).Create(
 		context.TODO(),
@@ -70,4 +76,38 @@ func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
 		logrus.Fatal("error creating upgrade spec")
 	}
 	logrus.Debug(res)
+}
+
+func ableToUpgrade() (bool, string) {
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("error registering cnvrgapp CR")
+	}
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("error creating cnvrgappv1 clientset")
+	}
+	res, err := clientSet.CnvrgAppUpgrades(viper.GetString("cnvrg-namespace")).
+		List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("can't list upgrade objects")
+	}
+	logrus.Debug(res)
+	activeUpgradeName := ""
+	activeUpgradesCounts := 0
+	for _, upgradeSpec := range res.Items {
+		if upgradeSpec.Spec.Condition == "upgrade" || upgradeSpec.Spec.Condition == "rollback" {
+			activeUpgradeName = upgradeSpec.Name
+			activeUpgradesCounts += 1
+		}
+	}
+
+	if activeUpgradesCounts > 0 {
+		return false, fmt.Sprintf("unable create upgrade spec, upgrade: %v currently active", activeUpgradeName)
+	}
+
+	return true, ""
 }

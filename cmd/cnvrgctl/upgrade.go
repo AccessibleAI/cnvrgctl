@@ -22,7 +22,7 @@ var AppUpgradeCmd = &cobra.Command{
 
 func appUpgrade() {
 	appImage := getImageForUpgrade()
-	logrus.Infof("using %v for upgrade", appImage)
+	logrus.Infof("image: %v", appImage)
 	upgradeSpec := v1.NewCnvrgAppUpgrade(
 		viper.GetString("cnvrg-namespace"),
 		viper.GetString("cnvrgapp-name"),
