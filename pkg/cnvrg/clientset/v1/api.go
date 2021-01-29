@@ -1,7 +1,7 @@
 package v1
 
 import (
-	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
+	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"

@@ -2,7 +2,7 @@ package v1
 
 import (
 	"context"
-	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
+	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"

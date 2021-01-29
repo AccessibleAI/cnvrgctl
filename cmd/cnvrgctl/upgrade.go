@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/cnvrgctl/pkg/cnvrgapp"
-	v1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
+	"github.com/cnvrgctl/pkg/cnvrg"
+	v1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"github.com/cnvrgctl/pkg/images"
 	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"

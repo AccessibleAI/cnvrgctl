@@ -2,8 +2,8 @@ package cnvrg
 
 import (
 	"context"
-	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrgapp/api/types/v1"
-	v1 "github.com/cnvrgctl/pkg/cnvrgapp/clientset/v1"
+	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
+	v1 "github.com/cnvrgctl/pkg/cnvrg/clientset/v1"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
