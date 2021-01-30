@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 )
@@ -15,9 +16,8 @@ type CnvrgAppUpgradeSpec struct {
 }
 
 type CnvrgAppUpgradeStatus struct {
-	Status struct {
-		Status string `json:"status"`
-	} `json:"status"`
+	Status      string      `json:"status"`
+	CnvrgBackup interface{} `json:"cnvrgBackup"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -36,17 +36,23 @@ type CnvrgAppUpgradeList struct {
 	Items           []CnvrgAppUpgrade `json:"items"`
 }
 
-func NewCnvrgAppUpgrade(namespace string, cnvrgAppName string, image string, cacheImage string) *CnvrgAppUpgrade {
+func NewCnvrgAppUpgrade(image string) *CnvrgAppUpgrade {
 
 	cnvrgAppUpgrade := CnvrgAppUpgrade{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "mlops.cnvrg.io/v1", Kind: "CnvrgAppUpgrade"},
-		ObjectMeta: metav1.ObjectMeta{Name: getUpgradeSpecName(image), Namespace: namespace},
+		TypeMeta: metav1.TypeMeta{APIVersion: "mlops.cnvrg.io/v1", Kind: "CnvrgAppUpgrade"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      getUpgradeSpecName(image),
+			Namespace: viper.GetString("cnvrg-namespace"),
+		},
 		Spec: CnvrgAppUpgradeSpec{
-			Condition:    "upgrade",
-			CacheDsName:  "app-image-cache",
-			CnvrgAppName: cnvrgAppName,
+			Condition:    viper.GetString("condition"),
+			CacheDsName:  viper.GetString("cacheDsName"),
+			CnvrgAppName: viper.GetString("cnvrgAppName"),
 			Image:        image,
-			CacheImage:   cacheImage,
+			CacheImage:   viper.GetString("cacheImage"),
+		},
+		Status: CnvrgAppUpgradeStatus{
+			Status: "initiating",
 		},
 	}
 	return &cnvrgAppUpgrade
@@ -60,4 +66,3 @@ func getUpgradeSpecName(image string) string {
 	}
 	return specName
 }
-

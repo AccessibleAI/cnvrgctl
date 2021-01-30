@@ -111,3 +111,31 @@ func ableToUpgrade() (bool, string) {
 
 	return true, ""
 }
+
+func WatchForCnvrgApp() {
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error registering cnvrgapp CR")
+	}
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgApp(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error creating cnvrgappv1 clientset")
+	}
+	WatchCnvrgAppResources(clientSet)
+}
+
+func WatchForCnvrgAppUpgrade() {
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error registering cnvrgapp CR")
+	}
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error creating cnvrgappv1 clientset")
+	}
+	WatchCnvrgAppUpgradeResources(clientSet)
+}

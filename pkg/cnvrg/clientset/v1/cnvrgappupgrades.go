@@ -37,7 +37,6 @@ func (c *cnvrgappupgradeClient) Create(ctx context.Context, cnvrgappUpgrade *cnv
 	return
 }
 
-
 func (c *cnvrgappupgradeClient) List(ctx context.Context, opts metav1.ListOptions) (result *cnvrgappv1.CnvrgAppUpgradeList, err error) {
 	result = &cnvrgappv1.CnvrgAppUpgradeList{}
 	err = c.restClient.

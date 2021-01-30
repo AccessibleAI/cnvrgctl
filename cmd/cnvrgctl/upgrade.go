@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/cnvrgctl/pkg/cnvrg"
 	v1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"github.com/cnvrgctl/pkg/images"
@@ -8,10 +9,22 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"encoding/json"
 )
 
-var AppUpgradeCmd = &cobra.Command{
+var upgradeAppParams = []param{
+	{name: "condition", value: "upgrade", usage: "upgrade | rollback | inactive"},
+	{name: "cacheDsName", value: "app-image-cache", usage: "caching DaemonSet name"},
+	{name: "cnvrgAppName", value: "cnvrg-app", usage: "cnvrgapp object name"},
+	{name: "image", value: "", usage: "image for upgrade"},
+	{name: "cacheImage", value: "true", usage: "true/false to cache image before upgrade"},
+}
+
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "upgrade cnvrg stack components",
+}
+
+var appUpgradeCmd = &cobra.Command{
 	Use:   "app",
 	Short: "Execute cnvrg webapp and sidekiq upgrade",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -23,18 +36,15 @@ var AppUpgradeCmd = &cobra.Command{
 func appUpgrade() {
 	appImage := getImageForUpgrade()
 	logrus.Infof("image: %v", appImage)
-	upgradeSpec := v1.NewCnvrgAppUpgrade(
-		viper.GetString("cnvrg-namespace"),
-		viper.GetString("cnvrgapp-name"),
-		appImage,
-		viper.GetString("cache-image"),
-	)
+	upgradeSpec := v1.NewCnvrgAppUpgrade(appImage)
 	if viper.GetBool("dry-run") {
 		b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
 		logrus.Info("\n" + string(b))
 	}
 	cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
-
+	run := make(chan bool)
+	cnvrg.WatchForCnvrgAppUpgrade()
+	<-run
 }
 
 func getImageForUpgrade() string {
