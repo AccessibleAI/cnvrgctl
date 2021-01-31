@@ -59,10 +59,13 @@ func NewCnvrgAppUpgrade(image string) *CnvrgAppUpgrade {
 }
 
 func getUpgradeSpecName(image string) string {
-	specName := "upgrade-" + uuid.New().String()
+	if viper.GetString("upgrade-name") != "" {
+		return viper.GetString("upgrade-name")
+	}
+	specName := "upgrade-"
 	specNameStrArr := strings.Split(image, ":")
 	if len(specNameStrArr) == 2 {
 		specName = specNameStrArr[1]
 	}
-	return specName
+	return specName + "-" + strings.Split(uuid.New().String(), "-")[0]
 }

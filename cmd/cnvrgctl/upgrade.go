@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/cnvrgctl/pkg"
 	"github.com/cnvrgctl/pkg/cnvrg"
 	v1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
-	"github.com/cnvrgctl/pkg"
 	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,7 +17,8 @@ var upgradeAppParams = []param{
 	{name: "cnvrgAppName", value: "cnvrg-app", usage: "cnvrgapp object name"},
 	{name: "image", value: "", usage: "image for upgrade"},
 	{name: "cacheImage", value: "true", usage: "true/false to cache image before upgrade"},
-	{name: "watch-upgrade", value: false, usage: "--watch-upgrade=true to watch for existing upgrade"},
+	{name: "watch-running-upgrade", value: false, usage: "--watch-running-upgrade=true to watch for existing upgrade"},
+	{name: "upgrade-name", value: "", usage: "name for the upgrade, default to image tag"},
 }
 
 var upgradeCmd = &cobra.Command{
@@ -29,28 +30,32 @@ var appUpgradeCmd = &cobra.Command{
 	Use:   "app",
 	Short: "Execute cnvrg webapp and sidekiq upgrade",
 	Run: func(cmd *cobra.Command, args []string) {
-		logrus.Info("running cnvrg application upgrade...")
-		appUpgrade()
+		upgradeName := ""
+		if viper.GetBool("watch-running-upgrade") == false {
+			logrus.Info("running cnvrg application upgrade...")
+			upgradeName = appUpgrade()
+		}
+		cnvrg.WatchForCnvrgAppUpgrade(cnvrg.GetAppUpgradeNameForWatch(upgradeName))
+		logrus.Info("done")
 	},
 }
 
-func appUpgrade() {
-
-	if viper.GetBool("watch-upgrade") == false {
-		appImage := getImageForUpgrade()
-		logrus.Infof("image: %v", appImage)
-		upgradeSpec := v1.NewCnvrgAppUpgrade(appImage)
-		if viper.GetBool("dry-run") {
-			b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
-			logrus.Info("\n" + string(b))
-		}
+func appUpgrade() (upgradeName string) {
+	appImage := getImageForUpgrade()
+	logrus.Infof("image: %v", appImage)
+	upgradeSpec := v1.NewCnvrgAppUpgrade(appImage)
+	if viper.GetBool("dry-run") {
+		b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
+		logrus.Info("\n" + string(b))
+	} else {
 		cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
 	}
-	cnvrg.WatchForCnvrgAppUpgrade()
+
+	return upgradeSpec.Name
 }
 
 func getImageForUpgrade() string {
-	appImage := viper.GetString("app-image")
+	appImage := viper.GetString("image")
 	if appImage != "" {
 		return appImage
 	}

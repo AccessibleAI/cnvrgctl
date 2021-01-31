@@ -5,6 +5,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/cnvrgctl/pkg"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
+	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -152,7 +153,12 @@ func IsClosed(ch <-chan struct{}) bool {
 	return false
 }
 
-func WatchForCnvrgAppUpgrade() {
+func WatchForCnvrgAppUpgrade(upgradeName string) {
+	if viper.GetBool("dry-run") {
+		logrus.Debug("Dry run on, skipping")
+		return
+	}
+	logrus.Debugf("upgradeName to watch: %v", upgradeName)
 	config, _ := getK8SDefaultClient()
 	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
 		logrus.Debug(err.Error())
@@ -163,20 +169,50 @@ func WatchForCnvrgAppUpgrade() {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error creating cnvrgappv1 clientset")
 	}
+	eventData := evenHandlerData{objName: upgradeName, stopper: make(chan struct{}), messages: make(chan string, 100)}
 	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
-	stopper := make(chan struct{})
-	messages := make(chan string, 100)
-	defer close(messages)
-	go pkg.StartSpinner(s, " watching deployment", messages)
-	go WatchCnvrgAppUpgradeResources(clientSet, cnvrgAppUpgradeEventHandler, stopper, messages)
-	logrus.Info("im done")
-	<-stopper
+	defer close(eventData.messages)
+	go pkg.StartSpinner(s, " upgrading... ", eventData.messages)
+	go WatchCnvrgAppUpgradeResources(clientSet, cnvrgAppUpgradeEventHandler, eventData)
+	<-eventData.stopper
 	s.Stop()
 }
 
-func cnvrgAppUpgradeEventHandler(old, new interface{}, stopper chan struct{}, message chan string) {
-	upgradeSpec := new.(*cnvrgappv1.CnvrgAppUpgrade)
+func cnvrgAppUpgradeEventHandler(eventData evenHandlerData) {
+	upgradeSpec := eventData.new.(*cnvrgappv1.CnvrgAppUpgrade)
+	if upgradeSpec.Name == eventData.objName {
+		if upgradeSpec.Spec.Condition == "upgrade" || upgradeSpec.Spec.Condition == "inactive" {
+			eventData.messages <- upgradeSpec.Name + ": " + upgradeSpec.Status.Status
+			if upgradeSpec.Status.Status == "upgrade done" {
+				close(eventData.stopper)
+			}
+		}
+	}
+}
 
-	logrus.Infof("I'm upgrade even handler, %v", upgradeSpec.Name)
-	close(stopper)
+func GetAppUpgradeNameForWatch(upgradeName string) (name string) {
+	if upgradeName != "" {
+		return upgradeName
+	}
+	if viper.GetString("upgrade-name") != "" {
+		return viper.GetString("upgrade-name")
+	}
+	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
+	go pkg.StartSpinner(s, "fetching existing upgrades...", nil)
+	var upgradeNames []string
+	for _, upgrade := range listAppUpgrades().Items {
+		upgradeNames = append(upgradeNames, upgrade.Name)
+	}
+	s.Stop()
+	prompt := promptui.Select{
+		Label: "Choose a image",
+		Items: upgradeNames,
+	}
+	_, upgradeName, err := prompt.Run()
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("error choosing upgrade")
+	}
+
+	return upgradeName
 }
