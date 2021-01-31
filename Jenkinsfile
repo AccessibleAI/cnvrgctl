@@ -46,6 +46,7 @@ pipeline {
                 script {
                     sh """
                         go build -v -ldflags="-X 'main.buildVersion=${NEXT_VERSION}' -X 'main.commit=${GIT_COMMIT}'" -o cnvrgctl cmd/cnvrgctl/*.go
+
                        """
                 }
             }
