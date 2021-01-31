@@ -2,6 +2,8 @@ package cnvrg
 
 import (
 	"fmt"
+	"github.com/briandowns/spinner"
+	"github.com/cnvrgctl/pkg"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -12,6 +14,7 @@ import (
 	cnvrgV1client "github.com/cnvrgctl/pkg/cnvrg/clientset/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"context"
+	"time"
 )
 
 func getK8SDefaultClient() (*rest.Config, *kubernetes.Clientset) {
@@ -78,7 +81,7 @@ func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
 	logrus.Debug(res)
 }
 
-func ableToUpgrade() (bool, string) {
+func listAppUpgrades() *cnvrgappv1.CnvrgAppUpgradeList {
 	config, _ := getK8SDefaultClient()
 	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
 		logrus.Debug(err.Error())
@@ -96,34 +99,57 @@ func ableToUpgrade() (bool, string) {
 		logrus.Fatal("can't list upgrade objects")
 	}
 	logrus.Debug(res)
+	return res
+}
+
+func GetActiveAppUpgrade() *cnvrgappv1.CnvrgAppUpgrade {
+	for _, upgradeSpec := range listAppUpgrades().Items {
+		if upgradeSpec.Spec.Condition == "upgrade" {
+			return &upgradeSpec
+		}
+	}
+	return nil
+}
+
+func ableToUpgrade() (bool, string) {
 	activeUpgradeName := ""
 	activeUpgradesCounts := 0
-	for _, upgradeSpec := range res.Items {
+	for _, upgradeSpec := range listAppUpgrades().Items {
 		if upgradeSpec.Spec.Condition == "upgrade" || upgradeSpec.Spec.Condition == "rollback" {
 			activeUpgradeName = upgradeSpec.Name
 			activeUpgradesCounts += 1
 		}
 	}
-
 	if activeUpgradesCounts > 0 {
-		return false, fmt.Sprintf("unable create upgrade spec, upgrade: %v currently active", activeUpgradeName)
+		return false, fmt.Sprintf(
+			"unable create upgrade spec, upgrade: %v currently active, use --watch-upgrade to watch running upgrade", activeUpgradeName,
+		)
 	}
-
 	return true, ""
 }
 
 func WatchForCnvrgApp() {
-	config, _ := getK8SDefaultClient()
-	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
-		logrus.Debug(err.Error())
-		logrus.Fatal("Error registering cnvrgapp CR")
+	//config, _ := getK8SDefaultClient()
+	//if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+	//	logrus.Debug(err.Error())
+	//	logrus.Fatal("Error registering cnvrgapp CR")
+	//}
+	//clientSet, err := cnvrgV1client.NewForConfigCnvrgApp(config)
+	//if err != nil {
+	//	logrus.Debug(err.Error())
+	//	logrus.Fatal("Error creating cnvrgappv1 clientset")
+	//}
+	//WatchCnvrgAppResources(clientSet)
+}
+
+func IsClosed(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
 	}
-	clientSet, err := cnvrgV1client.NewForConfigCnvrgApp(config)
-	if err != nil {
-		logrus.Debug(err.Error())
-		logrus.Fatal("Error creating cnvrgappv1 clientset")
-	}
-	WatchCnvrgAppResources(clientSet)
+
+	return false
 }
 
 func WatchForCnvrgAppUpgrade() {
@@ -137,5 +163,20 @@ func WatchForCnvrgAppUpgrade() {
 		logrus.Debug(err.Error())
 		logrus.Fatal("Error creating cnvrgappv1 clientset")
 	}
-	WatchCnvrgAppUpgradeResources(clientSet)
+	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
+	stopper := make(chan struct{})
+	messages := make(chan string, 100)
+	defer close(messages)
+	go pkg.StartSpinner(s, " watching deployment", messages)
+	go WatchCnvrgAppUpgradeResources(clientSet, cnvrgAppUpgradeEventHandler, stopper, messages)
+	logrus.Info("im done")
+	<-stopper
+	s.Stop()
+}
+
+func cnvrgAppUpgradeEventHandler(old, new interface{}, stopper chan struct{}, message chan string) {
+	upgradeSpec := new.(*cnvrgappv1.CnvrgAppUpgrade)
+
+	logrus.Infof("I'm upgrade even handler, %v", upgradeSpec.Name)
+	close(stopper)
 }

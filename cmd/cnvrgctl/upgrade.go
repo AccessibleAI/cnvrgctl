@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/cnvrgctl/pkg/cnvrg"
 	v1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
-	"github.com/cnvrgctl/pkg/images"
+	"github.com/cnvrgctl/pkg"
 	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,6 +17,7 @@ var upgradeAppParams = []param{
 	{name: "cnvrgAppName", value: "cnvrg-app", usage: "cnvrgapp object name"},
 	{name: "image", value: "", usage: "image for upgrade"},
 	{name: "cacheImage", value: "true", usage: "true/false to cache image before upgrade"},
+	{name: "watch-upgrade", value: false, usage: "--watch-upgrade=true to watch for existing upgrade"},
 }
 
 var upgradeCmd = &cobra.Command{
@@ -34,17 +35,18 @@ var appUpgradeCmd = &cobra.Command{
 }
 
 func appUpgrade() {
-	appImage := getImageForUpgrade()
-	logrus.Infof("image: %v", appImage)
-	upgradeSpec := v1.NewCnvrgAppUpgrade(appImage)
-	if viper.GetBool("dry-run") {
-		b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
-		logrus.Info("\n" + string(b))
+
+	if viper.GetBool("watch-upgrade") == false {
+		appImage := getImageForUpgrade()
+		logrus.Infof("image: %v", appImage)
+		upgradeSpec := v1.NewCnvrgAppUpgrade(appImage)
+		if viper.GetBool("dry-run") {
+			b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
+			logrus.Info("\n" + string(b))
+		}
+		cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
 	}
-	cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
-	run := make(chan bool)
 	cnvrg.WatchForCnvrgAppUpgrade()
-	<-run
 }
 
 func getImageForUpgrade() string {
@@ -64,7 +66,7 @@ func getImageForUpgrade() string {
 	}
 	prompt := promptui.Select{
 		Label: "Choose a image",
-		Items: images.ListAppImages(
+		Items: pkg.ListAppImages(
 			cnvrgSpec.Spec.CnvrgApp.Conf.Registry.User,
 			cnvrgSpec.Spec.CnvrgApp.Conf.Registry.Password,
 		),

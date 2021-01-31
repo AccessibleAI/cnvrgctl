@@ -2,9 +2,9 @@ package cnvrg
 
 import (
 	"context"
+	"github.com/briandowns/spinner"
 	cnvrgappv1 "github.com/cnvrgctl/pkg/cnvrg/api/types/v1"
 	v1 "github.com/cnvrgctl/pkg/cnvrg/clientset/v1"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -13,6 +13,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"time"
 )
+
+type evenHandlerData struct {
+	old, new interface{}
+	stopper  chan struct{}
+	spinner  spinner.Spinner
+}
+
+type updateEventHandler func(old, new interface{}, stopper chan struct{}, message chan string)
 
 func WatchCnvrgAppResources(clientSet v1.CnvrgAppV1Interface) cache.Store {
 
@@ -29,13 +37,10 @@ func WatchCnvrgAppResources(clientSet v1.CnvrgAppV1Interface) cache.Store {
 		10*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				logrus.Info("cnvrgapp has ben created")
 			},
 			UpdateFunc: func(old, new interface{}) {
-				logrus.Info("The cnvrgapp has been updated")
 			},
 			DeleteFunc: func(obj interface{}) {
-				logrus.Info("the cnvrgapp has been deleted")
 			},
 		},
 	)
@@ -44,7 +49,7 @@ func WatchCnvrgAppResources(clientSet v1.CnvrgAppV1Interface) cache.Store {
 	return cnvrgAppStore
 }
 
-func WatchCnvrgAppUpgradeResources(clientSet v1.CnvrgAppUpgradeV1Interface) cache.Store {
+func WatchCnvrgAppUpgradeResources(clientSet v1.CnvrgAppUpgradeV1Interface, eventHandler updateEventHandler, stopper chan struct{}, message chan string) cache.Store {
 
 	cnvrgAppUpgradeStore, cnvrgAppUpgradeController := cache.NewInformer(
 		&cache.ListWatch{
@@ -59,17 +64,16 @@ func WatchCnvrgAppUpgradeResources(clientSet v1.CnvrgAppUpgradeV1Interface) cach
 		10*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				logrus.Info("upgrade has ben created")
+				eventHandler(nil, obj, stopper, message)
 			},
 			UpdateFunc: func(old, new interface{}) {
-				logrus.Info("the upgrade has been updated")
+				eventHandler(old, new, stopper, message)
 			},
 			DeleteFunc: func(obj interface{}) {
-				logrus.Info("the upgrade has been deleted")
+				eventHandler(nil, obj, stopper, message)
 			},
 		},
 	)
-
-	go cnvrgAppUpgradeController.Run(wait.NeverStop)
+	go cnvrgAppUpgradeController.Run(stopper)
 	return cnvrgAppUpgradeStore
 }

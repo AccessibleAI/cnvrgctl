@@ -1,7 +1,6 @@
-package images
+package pkg
 
 import (
-	"fmt"
 	"github.com/briandowns/spinner"
 	"github.com/heroku/docker-registry-client/registry"
 	"github.com/sirupsen/logrus"
@@ -15,7 +14,7 @@ import (
 func ListAppImages(username string, password string) (images []string) {
 	imagesLength := 10
 	s := spinner.New(spinner.CharSets[27], 50*time.Millisecond)
-	go startSpinner(s, "fetching images list...", nil)
+	go StartSpinner(s, "fetching images list...", nil)
 	url := "https://registry-1.docker.io/"
 	hub, err := registry.New(url, username, password)
 	if err != nil {
@@ -43,13 +42,3 @@ func ListAppImages(username string, password string) (images []string) {
 	return
 }
 
-func startSpinner(s *spinner.Spinner, suffixMessage string, messages <-chan string) {
-	s.Suffix = suffixMessage
-	s.Color("green")
-	s.Start()
-	for v := range messages {
-		msg := fmt.Sprintf("%v [ %v ]", suffixMessage, v)
-		s.Suffix = msg
-		s.Restart()
-	}
-}
