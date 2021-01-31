@@ -10,11 +10,6 @@ pipeline {
         stage('cleanup workspace') {
             steps {
                 script{
-                    if (skipAll()) {
-                        echo 'Aborting Build'
-                        currentBuild.result = 'ABORTED'
-                        throw new FlowInterruptedException(Result.ABORTED)
-                    }
                     cleanWs()
                 }
             }
@@ -46,7 +41,6 @@ pipeline {
                 script {
                     sh """
                         go build -v -ldflags="-X 'main.buildVersion=${NEXT_VERSION}' -X 'main.commit=${GIT_COMMIT}'" -o cnvrgctl cmd/cnvrgctl/*.go
-
                        """
                 }
             }
