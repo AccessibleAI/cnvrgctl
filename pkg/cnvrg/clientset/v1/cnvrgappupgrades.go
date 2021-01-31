@@ -15,14 +15,13 @@ type CnvrgAppUpgradeInterface interface {
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*cnvrgappv1.CnvrgAppUpgrade, error)
 	Update(ctx context.Context, cnvrgapp *cnvrgappv1.CnvrgAppUpgrade, opts metav1.UpdateOptions) (*cnvrgappv1.CnvrgAppUpgrade, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 }
-
 
 type cnvrgappupgradeClient struct {
 	restClient rest.Interface
 	ns         string
 }
-
 
 func (c *cnvrgappupgradeClient) Create(ctx context.Context, cnvrgappUpgrade *cnvrgappv1.CnvrgAppUpgrade, opts metav1.CreateOptions) (result *cnvrgappv1.CnvrgAppUpgrade, err error) {
 	result = &cnvrgappv1.CnvrgAppUpgrade{}
@@ -84,4 +83,15 @@ func (c *cnvrgappupgradeClient) Watch(ctx context.Context, opts metav1.ListOptio
 		Resource("cnvrgappupgrades").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
+}
+
+func (c *cnvrgappupgradeClient) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) (err error) {
+	return c.restClient.
+		Delete().
+		Namespace(c.ns).
+		Resource("cnvrgappupgrades").
+		Name(name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Do(ctx).
+		Error()
 }

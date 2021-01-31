@@ -48,9 +48,11 @@ func appUpgrade() (upgradeName string) {
 		b, _ := json.MarshalIndent(upgradeSpec, "", "  ")
 		logrus.Info("\n" + string(b))
 	} else {
-		cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
+		err := cnvrg.CreateCnvrgAppUpgrade(upgradeSpec)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 	}
-
 	return upgradeSpec.Name
 }
 

@@ -55,12 +55,28 @@ func GetCnvrgApp() (cnvrgapp *cnvrgappv1.CnvrgApp) {
 	return
 }
 
-func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
-	ok, msg := ableToUpgrade()
-	if ok == false {
-		logrus.Fatal(msg)
+func GetCnvrgAppUpgrade(name string) (appUpgrade *cnvrgappv1.CnvrgAppUpgrade) {
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error registering cnvrgapp CR")
 	}
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error creating cnvrgappv1 clientset")
+	}
+	namespace := viper.GetString("cnvrg-namespace")
+	appUpgrade, err = clientSet.CnvrgAppUpgrades(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("Error during fetching the cnvrgapp")
+	}
+	logrus.Debug(appUpgrade)
+	return
+}
 
+func DeleteCnvrgAppUpgrade(name string) error {
 	config, _ := getK8SDefaultClient()
 	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
 		logrus.Debug(err.Error())
@@ -69,7 +85,38 @@ func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
 	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
 	if err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("error creating cnvrgappv1 clientset")
+		return fmt.Errorf("error creating cnvrgappv1 clientset")
+	}
+	return clientSet.CnvrgAppUpgrades(viper.GetString("cnvrg-namespace")).Delete(
+		context.TODO(),
+		name,
+		metav1.DeleteOptions{})
+}
+
+func DeleteAllUpgrades() error {
+	for _, upgrade := range listAppUpgrades().Items {
+		err := DeleteCnvrgAppUpgrade(upgrade.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) error {
+	err := ableToUpgrade()
+	if err != nil {
+		return err
+	}
+	config, _ := getK8SDefaultClient()
+	if err := cnvrgappv1.AddToScheme(scheme.Scheme); err != nil {
+		logrus.Debug(err.Error())
+		logrus.Fatal("error registering cnvrgapp CR")
+	}
+	clientSet, err := cnvrgV1client.NewForConfigCnvrgAppUpgrade(config)
+	if err != nil {
+		logrus.Debug(err.Error())
+		return fmt.Errorf("error creating cnvrgappv1 clientset")
 	}
 	res, err := clientSet.CnvrgAppUpgrades(viper.GetString("cnvrg-namespace")).Create(
 		context.TODO(),
@@ -77,9 +124,10 @@ func CreateCnvrgAppUpgrade(upgradeSpec *cnvrgappv1.CnvrgAppUpgrade) {
 		metav1.CreateOptions{})
 	if err != nil {
 		logrus.Debug(err.Error())
-		logrus.Fatal("error creating upgrade spec")
+		return fmt.Errorf("error creating upgrade spec")
 	}
 	logrus.Debug(res)
+	return nil
 }
 
 func listAppUpgrades() *cnvrgappv1.CnvrgAppUpgradeList {
@@ -112,7 +160,7 @@ func GetActiveAppUpgrade() *cnvrgappv1.CnvrgAppUpgrade {
 	return nil
 }
 
-func ableToUpgrade() (bool, string) {
+func ableToUpgrade() error {
 	activeUpgradeName := ""
 	activeUpgradesCounts := 0
 	for _, upgradeSpec := range listAppUpgrades().Items {
@@ -122,11 +170,11 @@ func ableToUpgrade() (bool, string) {
 		}
 	}
 	if activeUpgradesCounts > 0 {
-		return false, fmt.Sprintf(
+		return fmt.Errorf(
 			"unable create upgrade spec, upgrade: %v currently active, use --watch-upgrade to watch running upgrade", activeUpgradeName,
 		)
 	}
-	return true, ""
+	return nil
 }
 
 func WatchForCnvrgApp() {
