@@ -82,6 +82,7 @@ func setupCommands() {
 	upgradeCmd.AddCommand(appUpgradeCmd)
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(versionCmd)
 
 }
 
