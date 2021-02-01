@@ -64,7 +64,7 @@ pipeline {
         }
         stage('bump version') {
             when {
-                expression { return ((env.BRANCH_NAME == "develop" || env.BRANCH_NAME == "master")) }
+                expression { return ((env.BRANCH_NAME == "develop" || env.BRANCH_NAME == "main")) }
             }
             steps {
                 script {
@@ -74,7 +74,7 @@ pipeline {
                             git tag -a ${NEXT_VERSION} -m "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
                             git push https://${USERNAME}:${PASSWORD}@${url} --tags -f
                         """
-                        if (env.BRANCH_NAME == "master") {
+                        if (env.BRANCH_NAME == "main") {
                             url = sh(returnStdout: true, script: 'git config remote.origin.url').trim().replaceAll("https://", "")
                             def nextRC = sh(script: "scripts/semver.sh bump minor ${NEXT_VERSION}", returnStdout: true).trim()
                             echo "next version gonna be: ${nextRC}-rc0"
