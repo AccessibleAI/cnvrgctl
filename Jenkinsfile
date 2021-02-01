@@ -46,9 +46,6 @@ pipeline {
             }
         }
         stage('setup test cluster') {
-            when {
-                expression { !skipTests()  }
-            }
             steps {
                 script {
                     withCredentials([azureServicePrincipal('jenkins-cicd-azure-new')]) {
