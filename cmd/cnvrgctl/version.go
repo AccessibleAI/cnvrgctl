@@ -5,16 +5,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	buildVersion string = ""
-	commit       string = ""
-)
+var Version string = "v1.0.1"
+
+
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print cnvrgctl version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("version : " + buildVersion)
-		fmt.Println("commit  : " + commit)
+		fmt.Println("version : " + Version)
 	},
 }

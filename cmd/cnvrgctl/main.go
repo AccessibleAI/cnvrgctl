@@ -76,11 +76,23 @@ func setParams(params []param, command *cobra.Command) {
 func setupCommands() {
 	// Init config
 	cobra.OnInitialize(initConfig)
-	// Setup commands
-	setParams(rootParams, rootCmd)
+	// update cmd
 	setParams(upgradeAppParams, appUpgradeCmd)
 	upgradeCmd.AddCommand(appUpgradeCmd)
+
+	setParams(imagesDumpParams, dumpCmd)
+	setParams(imagesParams, imagesCmd)
+	setParams(rootParams, rootCmd)
+
+	imagesCmd.AddCommand(dumpCmd)
+	imagesCmd.AddCommand(pullCmd)
+	imagesCmd.AddCommand(loadCmd)
+	imagesCmd.AddCommand(saveCmd)
+	imagesCmd.AddCommand(tagCmd)
+	imagesCmd.AddCommand(pushCmd)
+
 	rootCmd.AddCommand(upgradeCmd)
+	rootCmd.AddCommand(imagesCmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versionCmd)
 

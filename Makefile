@@ -1,9 +1,9 @@
 
 .PHONY: build
 build:
-	COMMIT=$(shell git rev-parse --short HEAD)
-#	VERSION=$(shell echo "v1.123.11232")
-	#go build -v -ldflags="-X 'main.buildVersion=${VERSION}' -X 'main.commit=${COMMIT}'" -o cnvrgctl cmd/cnvrgctl/*.go
+#	COMMIT=$(shell git rev-parse --short HEAD)
+#	VERSION=$(shell echo "v1.0")
+#	go build -v -ldflags="-X 'main.version=${VERSION}'" -o cnvrgctl cmd/cnvrgctl/*.go
 	go build -v -o cnvrgctl cmd/cnvrgctl/*.go
 
 .PHONY: install
