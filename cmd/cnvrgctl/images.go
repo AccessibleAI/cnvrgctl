@@ -21,7 +21,7 @@ var imagesParams = []param{
 	{name: "registry-repo", value: "", usage: "destination repository in registry, example: docker.io/<MY-REPO>"},
 	{name: "registry-user", value: "", usage: "registry user"},
 	{name: "registry-pass", value: "", usage: "registry password"},
-	{name: "path", value: ".", usage: "destination/source directory for saving/loading docker images"},
+	{name: "dir", value: ".", usage: "destination/source directory for saving/loading docker images"},
 	{name: "image", value: "", usage: "override default images list with explicit image"},
 }
 
@@ -160,15 +160,15 @@ func newImageTag(image string) string {
 }
 
 func archiveFullPath(image string) string {
-	path := viper.GetString("path")
-	if path == "." {
-		path, err := os.Getwd()
+	dir := viper.GetString("dir")
+	if dir == "." {
+		dir, err := os.Getwd()
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		return fmt.Sprintf("%v/%v", path, imageArchiveName(image))
+		return fmt.Sprintf("%v/%v", dir, imageArchiveName(image))
 	}
-	return fmt.Sprintf("%v/%v", path, imageArchiveName(image))
+	return fmt.Sprintf("%v/%v", dir, imageArchiveName(image))
 }
 
 func registryAuth() string {
@@ -191,7 +191,12 @@ func pullImages() {
 		if err != nil {
 			panic(err)
 		}
-		out, err := cli.ImagePull(ctx, image, types.ImagePullOptions{RegistryAuth: registryAuth()})
+		imagePullOptions := types.ImagePullOptions{}
+		// add pull secret only for cnvrg app image
+		if strings.Contains(image, "cnvrg/app") {
+			imagePullOptions = types.ImagePullOptions{RegistryAuth: registryAuth()}
+		}
+		out, err := cli.ImagePull(ctx, image, imagePullOptions)
 		if err != nil {
 			logrus.Error(err)
 		}

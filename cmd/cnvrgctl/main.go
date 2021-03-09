@@ -77,8 +77,8 @@ func setupCommands() {
 	// Init config
 	cobra.OnInitialize(initConfig)
 	// update cmd
-	setParams(upgradeAppParams, appUpgradeCmd)
-	upgradeCmd.AddCommand(appUpgradeCmd)
+	//setParams(upgradeAppParams, appUpgradeCmd)
+	//upgradeCmd.AddCommand(appUpgradeCmd)
 
 	setParams(imagesDumpParams, dumpCmd)
 	setParams(imagesParams, imagesCmd)
@@ -91,7 +91,7 @@ func setupCommands() {
 	imagesCmd.AddCommand(tagCmd)
 	imagesCmd.AddCommand(pushCmd)
 
-	rootCmd.AddCommand(upgradeCmd)
+	//rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(imagesCmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versionCmd)
