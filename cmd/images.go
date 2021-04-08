@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -16,41 +16,41 @@ import (
 	"strings"
 )
 
-var imagesParams = []param{
-	{name: "registry", value: "", usage: "destination registry, example: docker.io"},
-	{name: "registry-repo", value: "", usage: "destination repository in registry, example: docker.io/<MY-REPO>"},
-	{name: "registry-user", value: "", usage: "registry user"},
-	{name: "registry-pass", value: "", usage: "registry password"},
-	{name: "dir", value: ".", usage: "destination/source directory for saving/loading docker images"},
-	{name: "image", value: "", usage: "override default images list with explicit image"},
+var ImagesParams = []Param{
+	{Name: "registry", Value: "", Usage: "destination registry, example: docker.io"},
+	{Name: "registry-repo", Value: "", Usage: "destination repository in registry, example: docker.io/<MY-REPO>"},
+	{Name: "registry-user", Value: "", Usage: "registry user"},
+	{Name: "registry-pass", Value: "", Usage: "registry password"},
+	{Name: "dir", Value: ".", Usage: "destination/source directory for saving/loading docker images"},
+	{Name: "image", Value: "", Usage: "override default images list with explicit image"},
 }
 
-var imagesDumpParams = []param{
-	{name: "list", value: false, usage: "print raw images list"},
-	{name: "pull", value: false, usage: "print images pull commands"},
-	{name: "save", value: false, usage: "print images save command"},
-	{name: "load", value: false, usage: "print images load command"},
-	{name: "tag", value: false, usage: "print images tag command"},
-	{name: "push", value: false, usage: "print images push command"},
+var ImagesDumpParams = []Param{
+	{Name: "list", Value: false, Usage: "print raw images list"},
+	{Name: "pull", Value: false, Usage: "print images pull commands"},
+	{Name: "save", Value: false, Usage: "print images save command"},
+	{Name: "load", Value: false, Usage: "print images load command"},
+	{Name: "tag", Value: false, Usage: "print images tag command"},
+	{Name: "push", Value: false, Usage: "print images push command"},
 }
 
-var imagesCmd = &cobra.Command{
+var ImagesCmd = &cobra.Command{
 	Use:   "images",
 	Short: "manage images",
 }
 
-var dumpCmd = &cobra.Command{
+var DumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "dump images commands",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.GetBool("list") {
-			dumpImagesList()
+			DumpImagesList()
 		}
 		if viper.GetBool("pull") {
-			dumpImagesPull()
+			DumpImagesPull()
 		}
 		if viper.GetBool("save") {
-			dumpImagesSave()
+			DumpImagesSave()
 		}
 		if viper.GetBool("load") {
 			dumpImagesLoad()
@@ -64,7 +64,7 @@ var dumpCmd = &cobra.Command{
 	},
 }
 
-var pullCmd = &cobra.Command{
+var PullCmd = &cobra.Command{
 	Use:   "pull",
 	Short: "pull cnvrg images",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -72,7 +72,7 @@ var pullCmd = &cobra.Command{
 	},
 }
 
-var saveCmd = &cobra.Command{
+var SaveCmd = &cobra.Command{
 	Use:   "save",
 	Short: "save cnvrg images",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -80,7 +80,7 @@ var saveCmd = &cobra.Command{
 	},
 }
 
-var loadCmd = &cobra.Command{
+var LoadCmd = &cobra.Command{
 	Use:   "load",
 	Short: "load cnvrg images",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -88,7 +88,7 @@ var loadCmd = &cobra.Command{
 	},
 }
 
-var tagCmd = &cobra.Command{
+var TagCmd = &cobra.Command{
 	Use:   "tag",
 	Short: "tag cnvrg images",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -96,7 +96,7 @@ var tagCmd = &cobra.Command{
 	},
 }
 
-var pushCmd = &cobra.Command{
+var PushCmd = &cobra.Command{
 	Use:   "push",
 	Short: "push cnvrg images",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -104,19 +104,19 @@ var pushCmd = &cobra.Command{
 	},
 }
 
-func dumpImagesList() {
+func DumpImagesList() {
 	for _, image := range pkg.LoadCnvrgImages() {
 		fmt.Println(image)
 	}
 }
 
-func dumpImagesPull() {
+func DumpImagesPull() {
 	for _, image := range pkg.LoadCnvrgImages() {
 		fmt.Println(fmt.Sprintf("docker pull %v", image))
 	}
 }
 
-func dumpImagesSave() {
+func DumpImagesSave() {
 	for _, image := range pkg.LoadCnvrgImages() {
 		fmt.Println(fmt.Sprintf("docker save --output %v.tar %v", imageArchiveName(image), image))
 	}

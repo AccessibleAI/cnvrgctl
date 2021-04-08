@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ var Version string = "v1.0.1"
 
 
 
-var versionCmd = &cobra.Command{
+var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print cnvrgctl version",
 	Run: func(cmd *cobra.Command, args []string) {

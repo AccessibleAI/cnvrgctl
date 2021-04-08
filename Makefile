@@ -1,7 +1,10 @@
 
-.PHONY: build
-build-mac:
-		go build -v -o bin/cnvrgctl-darwin-x86_64 cmd/cnvrgctl/*.go
+pack:
+	pkger
+
+.PHONY: build-mac
+build-mac: pack
+	go build -v -o bin/cnvrgctl-darwin-x86_64 main.go pkged.go
 
 .PHONY: install
 install: build
@@ -10,7 +13,7 @@ install: build
 
 .PHONY: build-linux
 build-linux:
-	docker run --rm -v ${PWD}:/usr/src/cnvrgctl -w /usr/src/cnvrgctl golang:1.14 /bin/bash -c "GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/cnvrgctl-linux-x86_64 cmd/cnvrgctl/*.go"
+	docker run --rm -v ${PWD}:/usr/src/cnvrgctl -w /usr/src/cnvrgctl golang:1.14 /bin/bash -c "go mod download && pkger && GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/cnvrgctl-linux-x86_64 main.go pkged.go"
 
 build-all: build-linux build-mac
 

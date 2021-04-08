@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bufio"
@@ -26,16 +26,16 @@ var (
 	encPass   = "paMfuNMgwFAX2"
 )
 
-var clusterUpParams = []param{
-	{name: "single-node", value: true, usage: "create single node K8s cnvrg cluster"},
+var ClusterUpParams = []Param{
+	{Name: "single-node", Value: true, Usage: "create single node K8s cnvrg cluster"},
 }
 
-var clusterCmd = &cobra.Command{
+var ClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "deploy single node cnvrg K8s cluster",
 }
 
-var clusterUpCmd = &cobra.Command{
+var ClusterUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -66,7 +66,7 @@ func isUserExists(user string) bool {
 }
 
 func isKeysExists() bool {
-	if _, err := os.Stat(home + "/.ssh/id_rsa"); os.IsNotExist(err) {
+	if _, err := os.Stat(home + "/.ssh/rke_id_rsa"); os.IsNotExist(err) {
 		return false
 	}
 	return true
@@ -174,6 +174,7 @@ func createAuthorizedKeysFile() {
 func generateKeys() {
 
 	if isKeysExists() {
+		logrus.Info("keys exists, no need to generate")
 		return
 	}
 	bitSize := 2048
