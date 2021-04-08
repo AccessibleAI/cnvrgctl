@@ -62,7 +62,7 @@ func createUser() {
 		if out, err := userCmd.CombinedOutput(); err != nil {
 			logrus.Errorf("err: %v, there was an error by adding user cnvrg", err)
 		} else {
-			logrus.Info(out)
+			logrus.Info(string(out))
 		}
 	} else {
 		logrus.Warn("skip user creation, cnvrg user already exists")
