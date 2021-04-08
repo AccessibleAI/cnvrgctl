@@ -41,9 +41,9 @@ var ClusterUpCmd = &cobra.Command{
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Infof("deploying k8s cluster")
-		//createUser()
-		//generateKeys()
-		//fixPermissions()
+		createUser()
+		generateKeys()
+		fixPermissions()
 		saveRke()
 
 	},
