@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/user"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -41,6 +42,7 @@ var clusterUpCmd = &cobra.Command{
 		logrus.Infof("deploying k8s cluster")
 		createUser()
 		generateKeys()
+		fixPermissions()
 
 	},
 }
@@ -202,4 +204,22 @@ func generateKeys() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+}
+
+func fixPermissions() {
+	logrus.Info("fixing permissions")
+	u, err := user.Lookup(cnvrgUser)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+	err = filepath.Walk(home, func(name string, info os.FileInfo, err error) error {
+		if err == nil {
+			err = os.Chown(name, uid, gid)
+		}
+		return err
+	})
+	logrus.Fatal(err)
 }
