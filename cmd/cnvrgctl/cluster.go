@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -38,7 +39,7 @@ var clusterUpCmd = &cobra.Command{
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Infof("deploying k8s cluster")
-		//createUser()
+		createUser()
 		generateKeys()
 
 	},
@@ -144,6 +145,28 @@ func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
 	gid, _ := strconv.Atoi(u.Gid)
 	err = os.Chown(saveFileTo, uid, gid)
 	return nil
+}
+
+func createAuthorizedKeysFile() error {
+	src := home + "./ssh/rke_id_rsa.pub"
+	dst := home + "./ssh/authorized_keys"
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
 
 func generateKeys() {
