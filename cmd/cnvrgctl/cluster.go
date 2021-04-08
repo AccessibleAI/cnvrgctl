@@ -54,5 +54,7 @@ func createUser() {
 		} else {
 			logrus.Info(out)
 		}
+	}else{
+		logrus.Warn("skip user creation, cnvrg user already exists")
 	}
 }
