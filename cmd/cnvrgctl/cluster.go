@@ -60,7 +60,7 @@ func createUser() {
 			"cnvrg"}
 		userCmd := exec.Command("useradd", argUser...)
 		if out, err := userCmd.CombinedOutput(); err != nil {
-			logrus.Error(err, " there was an error by adding user cnvrg")
+			logrus.Errorf("err: %v, there was an error by adding user cnvrg", err)
 		} else {
 			logrus.Info(out)
 		}
