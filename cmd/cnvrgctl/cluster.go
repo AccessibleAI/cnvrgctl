@@ -47,14 +47,24 @@ func isUserExists(user string) bool {
 
 func createUser() {
 	if !isUserExists("cnvrg") {
-		argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/bash", "-p", "paMfuNMgwFAX2", "cnvrg"}
+		argUser := []string{
+			"-m",
+			"-d",
+			"/home/cnvrg",
+			"-s",
+			"/bin/bash",
+			"-p",
+			"paMfuNMgwFAX2",
+			"--groups",
+			"docker",
+			"cnvrg"}
 		userCmd := exec.Command("useradd", argUser...)
 		if out, err := userCmd.CombinedOutput(); err != nil {
 			logrus.Error(err, " there was an error by adding user cnvrg")
 		} else {
 			logrus.Info(out)
 		}
-	}else{
+	} else {
 		logrus.Warn("skip user creation, cnvrg user already exists")
 	}
 }
