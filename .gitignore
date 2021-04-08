@@ -2,4 +2,6 @@
 vendor
 bin
 pkged.go
-pkg/assets/rke_linux-amd64
+pkg/assets/rke
+pkg/assets/k9s
+pkg/assets/kubectl

@@ -41,10 +41,10 @@ var ClusterUpCmd = &cobra.Command{
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Infof("deploying k8s cluster")
-		createUser()
-		generateKeys()
-		fixPermissions()
-		saveRke()
+		//createUser()
+		//generateKeys()
+		//fixPermissions()
+		saveTools()
 
 	},
 }
@@ -236,27 +236,32 @@ func fixPermissions() {
 
 }
 
-func saveRke() {
-	dst := home + "/rke"
-	f, err := pkger.Open("/pkg/assets/rke_linux-amd64")
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	destination, err := os.Create(dst)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	defer destination.Close()
-	_, err = io.Copy(destination, f)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	uid, gid := getUserUidGid()
-	if err = os.Chown(dst, uid, gid); err != nil {
-		logrus.Fatal(err)
-	}
-	if err := os.Chmod(dst, 0755); err != nil {
-		logrus.Fatal(err)
+func saveTools() {
+	tools := []string{"k9s", "kubectl", "rke"}
+
+	for _, toolName := range tools {
+		logrus.Infof("dumping %s", toolName)
+		dst := home + "/" + toolName
+		f, err := pkger.Open("/pkg/assets/" + toolName)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		destination, err := os.Create(dst)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		defer destination.Close()
+		_, err = io.Copy(destination, f)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		uid, gid := getUserUidGid()
+		if err = os.Chown(dst, uid, gid); err != nil {
+			logrus.Fatal(err)
+		}
+		if err := os.Chmod(dst, 0755); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 }
