@@ -27,7 +27,7 @@ var clusterUpCmd = &cobra.Command{
 
 func createUser() {
 
-	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/sh", "-p", "paMfuNMgwFAX2", "cnvrg"}
+	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/bin", "-p", "paMfuNMgwFAX2", "cnvrg"}
 	userCmd := exec.Command("useradd", argUser...)
 
 
