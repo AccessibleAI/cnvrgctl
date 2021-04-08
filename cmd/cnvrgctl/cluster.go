@@ -72,7 +72,7 @@ func isKeysExists() bool {
 
 func createUser() {
 	if !isUserExists("cnvrg") {
-		argUser := []string{"-m", "-d", home, "-s", home, "-p", encPass, "--groups", "docker", cnvrgUser}
+		argUser := []string{"-m", "-d", home, "-s", "/bin/bash", "-p", encPass, "--groups", "docker", cnvrgUser}
 		userCmd := exec.Command("useradd", argUser...)
 		if out, err := userCmd.CombinedOutput(); err != nil {
 			logrus.Errorf("err: %v, there was an error by adding user cnvrg", err)
