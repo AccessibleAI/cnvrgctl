@@ -97,7 +97,7 @@ func generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	logrus.Info("Private Key generated")
+	logrus.Info("private Key generated")
 	return privateKey, nil
 }
 
@@ -175,7 +175,7 @@ func generateKeys() {
 		return
 	}
 	bitSize := 2048
-	sshKeysDir := home + "./ssh"
+	sshKeysDir := home + "/.ssh"
 
 	if err := os.MkdirAll(sshKeysDir, os.ModePerm); err != nil {
 		logrus.Fatalf("err: %v, faild to create %v", err, sshKeysDir)
