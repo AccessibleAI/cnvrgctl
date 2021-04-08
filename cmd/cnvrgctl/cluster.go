@@ -39,8 +39,21 @@ func createRandom(n int) string {
 
 func createUser() {
 	encrypt := base64.StdEncoding.EncodeToString([]byte(createRandom(9)))
+	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/sh", "cnvrg"}
 	argPass := []string{"-c", fmt.Sprintf("echo %s:%s | chpasswd", "cnvrg", encrypt)}
+
+	userCmd := exec.Command("useradd", argUser...)
 	passCmd := exec.Command("/bin/sh", argPass...)
+
+	if out, err := userCmd.Output(); err != nil {
+		fmt.Println(err, "There was an error by adding user", "cnvrg")
+	} else {
+		fmt.Printf("Output: %s\n", out)
+		if _, err := passCmd.Output(); err != nil {
+			fmt.Println(err)
+		}
+	}
+
 	if out, err := passCmd.Output(); err != nil {
 		fmt.Println(err)
 	} else {
