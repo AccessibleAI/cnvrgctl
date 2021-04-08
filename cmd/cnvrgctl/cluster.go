@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -27,37 +25,14 @@ var clusterUpCmd = &cobra.Command{
 	},
 }
 
-func createRandom(n int) string {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		fmt.Println(err)
-		//os.Exit(1)
-	}
-	return string(b)
-}
-
 func createUser() {
-	encrypt := base64.StdEncoding.EncodeToString([]byte(createRandom(9)))
-	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/sh", "cnvrg"}
-	argPass := []string{"-c", fmt.Sprintf("echo %s:%s | chpasswd", "cnvrg", encrypt)}
 
+	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/sh", "-p", "paMfuNMgwFAX", "cnvrg"}
 	userCmd := exec.Command("useradd", argUser...)
-	passCmd := exec.Command("/bin/sh", argPass...)
 
 	if out, err := userCmd.Output(); err != nil {
 		fmt.Println(err, "There was an error by adding user", "cnvrg")
 	} else {
 		fmt.Printf("Output: %s\n", out)
-		if _, err := passCmd.Output(); err != nil {
-			fmt.Println(err)
-		}
 	}
-
-	if out, err := passCmd.Output(); err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Printf("Output: %s\n", out)
-	}
-
 }
