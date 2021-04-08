@@ -221,5 +221,8 @@ func fixPermissions() {
 		}
 		return err
 	})
-	logrus.Fatal(err)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 }
