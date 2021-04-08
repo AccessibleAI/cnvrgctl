@@ -30,7 +30,8 @@ func createUser() {
 	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/sh", "-p", "paMfuNMgwFAX", "cnvrg"}
 	userCmd := exec.Command("useradd", argUser...)
 
-	if out, err := userCmd.Output(); err != nil {
+
+	if out, err := userCmd.CombinedOutput(); err != nil {
 		fmt.Println(err, "There was an error by adding user", "cnvrg")
 	} else {
 		fmt.Printf("Output: %s\n", out)
