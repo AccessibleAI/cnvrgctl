@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os/exec"
@@ -26,14 +25,11 @@ var clusterUpCmd = &cobra.Command{
 }
 
 func createUser() {
-
 	argUser := []string{"-m", "-d", "/home/cnvrg", "-s", "/bin/bash", "-p", "paMfuNMgwFAX2", "cnvrg"}
 	userCmd := exec.Command("useradd", argUser...)
-
-
 	if out, err := userCmd.CombinedOutput(); err != nil {
-		fmt.Println(err, "There was an error by adding user", "cnvrg")
+		logrus.Error(err, "tere was an error by adding user cnvrg")
 	} else {
-		fmt.Printf("Output: %s\n", out)
+		logrus.Info(out)
 	}
 }
