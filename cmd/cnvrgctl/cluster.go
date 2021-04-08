@@ -99,7 +99,7 @@ func generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	logrus.Info("private Key generated")
+	logrus.Info("private key generated")
 	return privateKey, nil
 }
 
@@ -128,7 +128,7 @@ func generatePublicKey(privatekey *rsa.PublicKey) ([]byte, error) {
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
 
-	logrus.Info("Public key generated")
+	logrus.Info("public key generated")
 	return pubKeyBytes, nil
 }
 
@@ -149,26 +149,26 @@ func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
 	return nil
 }
 
-func createAuthorizedKeysFile() error {
-	src := home + "./ssh/rke_id_rsa.pub"
-	dst := home + "./ssh/authorized_keys"
+func createAuthorizedKeysFile() {
+	src := home + "/.ssh/rke_id_rsa.pub"
+	dst := home + "/.ssh/authorized_keys"
 	in, err := os.Open(src)
 	if err != nil {
-		return err
+		logrus.Fatal(err)
 	}
 	defer in.Close()
 
 	out, err := os.Create(dst)
 	if err != nil {
-		return err
+		logrus.Fatal(err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
-		return err
+		logrus.Fatal(err)
 	}
-	return out.Close()
+	defer out.Close()
 }
 
 func generateKeys() {
@@ -205,6 +205,7 @@ func generateKeys() {
 		log.Fatal(err.Error())
 	}
 
+	createAuthorizedKeysFile()
 }
 
 func fixPermissions() {
