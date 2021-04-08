@@ -19,6 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v0.20.1
