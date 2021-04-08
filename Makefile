@@ -1,7 +1,7 @@
 
 .PHONY: build
 build-mac:
-	go build -v -o bin/cnvrgctl-darwin-x86_64 cmd/cnvrgctl/*.go
+		go build -v -o bin/cnvrgctl-darwin-x86_64 cmd/cnvrgctl/*.go
 
 .PHONY: install
 install: build

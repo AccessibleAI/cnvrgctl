@@ -80,10 +80,17 @@ func setupCommands() {
 	//setParams(upgradeAppParams, appUpgradeCmd)
 	//upgradeCmd.AddCommand(appUpgradeCmd)
 
+	setParams(clusterUpParams, clusterUpCmd)
+
 	setParams(imagesDumpParams, dumpCmd)
 	setParams(imagesParams, imagesCmd)
+
 	setParams(rootParams, rootCmd)
 
+	// cluster
+	clusterCmd.AddCommand(clusterUpCmd)
+
+	// images
 	imagesCmd.AddCommand(dumpCmd)
 	imagesCmd.AddCommand(pullCmd)
 	imagesCmd.AddCommand(loadCmd)
@@ -92,6 +99,7 @@ func setupCommands() {
 	imagesCmd.AddCommand(pushCmd)
 
 	//rootCmd.AddCommand(upgradeCmd)
+	rootCmd.AddCommand(clusterCmd)
 	rootCmd.AddCommand(imagesCmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versionCmd)
