@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/util/homedir"
-	"github.com/markbates/pkger"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,10 +106,6 @@ func kubeconfigDefaultLocation() string {
 		kubeconfigDefaultLocation = filepath.Join(home, ".kube", "config")
 	}
 	return kubeconfigDefaultLocation
-}
-
-func informPkger() {
-	pkger.Include("/assets/rke_linux-amd64")
 }
 
 func initConfig() {

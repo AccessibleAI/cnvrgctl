@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/markbates/pkger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -13,8 +14,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/user"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -40,9 +41,10 @@ var ClusterUpCmd = &cobra.Command{
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Infof("deploying k8s cluster")
-		createUser()
-		generateKeys()
-		fixPermissions()
+		//createUser()
+		//generateKeys()
+		//fixPermissions()
+		saveRke()
 
 	},
 }
@@ -209,21 +211,51 @@ func generateKeys() {
 	createAuthorizedKeysFile()
 }
 
-func fixPermissions() {
-	logrus.Info("fixing permissions")
+func getUserUidGid() (uid, gid int) {
 	u, err := user.Lookup(cnvrgUser)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	uid, _ := strconv.Atoi(u.Uid)
-	gid, _ := strconv.Atoi(u.Gid)
-	err = filepath.Walk(home, func(name string, info os.FileInfo, err error) error {
+	uid, _ = strconv.Atoi(u.Uid)
+	gid, _ = strconv.Atoi(u.Gid)
+	return uid, gid
+}
+
+func fixPermissions() {
+	logrus.Info("fixing permissions")
+	uid, gid := getUserUidGid()
+	err := filepath.Walk(home, func(name string, info os.FileInfo, err error) error {
 		if err == nil {
 			err = os.Chown(name, uid, gid)
 		}
 		return err
 	})
 	if err != nil {
+		logrus.Fatal(err)
+	}
+
+}
+
+func saveRke() {
+	dst := home + "/rke"
+	f, err := pkger.Open("/pkg/assets/rke_linux-amd64")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	destination, err := os.Create(dst)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, f)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	uid, gid := getUserUidGid()
+	if err = os.Chown(dst, uid, gid); err != nil {
+		logrus.Fatal(err)
+	}
+	if err := os.Chmod(dst, 0755); err != nil {
 		logrus.Fatal(err)
 	}
 

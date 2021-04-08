@@ -2,4 +2,4 @@
 vendor
 bin
 pkged.go
-assets
+pkg/assets/rke_linux-amd64
