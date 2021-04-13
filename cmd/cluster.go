@@ -308,12 +308,13 @@ func fixPermissions() {
 
 func saveTools() {
 	binTools := []string{"k9s", "kubectl", "rke"}
-	manifests := []string{"cnvrg-crds.yaml", "cnvrg-operator.yaml"}
 	for _, toolName := range binTools {
 		logrus.Infof("dumping %s", toolName)
 		dst := "/usr/local/bin/" + toolName
 		saveAsset(dst, toolName)
 	}
+
+	manifests := []string{"cnvrg-crds.yaml", "cnvrg-operator.yaml"}
 	for _, manifest := range manifests {
 		logrus.Infof("dumping %s", manifest)
 		dst := rkeDir + "/" + manifest
