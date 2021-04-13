@@ -389,7 +389,7 @@ func generateRkeClusterManifest() {
 		"Data": map[string]interface{}{
 			"Server":        getMainIp(),
 			"User":          cnvrgUser,
-			"SshPrivateKey": sshPublicKey,
+			"SshPrivateKey": sshPrivateKey,
 		},
 	}
 
