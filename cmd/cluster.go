@@ -26,8 +26,8 @@ import (
 var (
 	cnvrgUser     = "cnvrg"
 	home          = "/home/cnvrg"
-	sshPrivateKey = "/home/cnvrg/.ssh/rke_id_rsa"
-	sshPublicKey  = "/home/cnvrg/.ssh/rke_id_rsa.pub"
+	sshPrivateKey = "/home/cnvrg/.ssh/id_rsa"
+	sshPublicKey  = "/home/cnvrg/.ssh/id_rsa.pub"
 	encPass       = "paMfuNMgwFAX2"
 	rkeDir        = "/home/cnvrg/rke-cluster"
 )
