@@ -300,7 +300,7 @@ func getMainIp() string {
 
 func getMainNic() string {
 	// /proc/net/route
-	procRouteFile := "/tmp/route"
+	procRouteFile := "/proc/net/route"
 	b, err := ioutil.ReadFile(procRouteFile)
 	if err != nil {
 		log.Fatal(err)
