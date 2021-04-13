@@ -30,8 +30,7 @@ var (
 	sshPublicKey  = "/home/cnvrg/.ssh/id_rsa.pub"
 	encPass       = "paMfuNMgwFAX2"
 	rkeDir        = "/home/cnvrg/rke-cluster"
-	// sshdConfig    = "/etc/ssh/sshd_config"
-	sshdConfig = "/tmp/t"
+	sshdConfig    = "/etc/ssh/sshd_config"
 )
 
 var ClusterUpParams = []Param{
