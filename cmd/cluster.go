@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"github.com/markbates/pkger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -53,6 +54,7 @@ var ClusterUpCmd = &cobra.Command{
 		generateRkeClusterManifest()
 		allowTcpForwarding()
 		fixPermissions()
+		rkeUp()
 
 	},
 }
@@ -77,6 +79,9 @@ func allowTcpForwarding() {
 		if strings.Contains(sshdConfigData[i], "AllowTcpForwarding") {
 			if strings.TrimSpace(strings.ReplaceAll(sshdConfigData[i], "AllowTcpForwarding", "")) == "no" {
 				sshdConfigData[i] = "AllowTcpForwarding yes"
+				shouldEnableTcpForwarding = false
+			}
+			if strings.TrimSpace(strings.ReplaceAll(sshdConfigData[i], "AllowTcpForwarding", "")) == "yes" {
 				shouldEnableTcpForwarding = false
 			}
 		}
@@ -422,6 +427,32 @@ func generateRkeClusterManifest() {
 
 	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0644); err != nil {
 		logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
+		panic(err)
+	}
+}
+
+func rkeUp() {
+	args := []string{"-c", fmt.Sprintf(`su - cnvrg -c "cd %s && rke up"`, rkeDir)}
+	cmd := exec.Command("/bin/bash", args...)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		logrus.Errorf("%v error creating StdoutPipe for cmd", os.Stderr)
+		panic(err)
+	}
+	scanner := bufio.NewScanner(cmdReader)
+	go func() {
+		for scanner.Scan() {
+			logrus.Infof("%s", scanner.Text())
+		}
+	}()
+	if err := cmd.Start(); err != nil {
+		logrus.Error(err)
+		panic(err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		logrus.Error(err)
 		panic(err)
 	}
 }
