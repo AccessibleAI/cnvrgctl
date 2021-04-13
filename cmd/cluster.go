@@ -30,6 +30,8 @@ var (
 	sshPublicKey  = "/home/cnvrg/.ssh/id_rsa.pub"
 	encPass       = "paMfuNMgwFAX2"
 	rkeDir        = "/home/cnvrg/rke-cluster"
+	// sshdConfig    = "/etc/ssh/sshd_config"
+	sshdConfig = "/tmp/t"
 )
 
 var ClusterUpParams = []Param{
@@ -50,8 +52,52 @@ var ClusterUpCmd = &cobra.Command{
 		generateKeys()
 		saveTools()
 		generateRkeClusterManifest()
+		allowTcpForwarding()
 		fixPermissions()
+
 	},
+}
+
+func allowTcpForwarding() {
+	shouldEnableTcpForwarding := true
+	sshdConfigData := []string{}
+	file, err := os.Open(sshdConfig)
+	if err != nil {
+		logrus.Errorf("err: %v, error generating private key", err)
+		panic(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		sshdConfigData = append(sshdConfigData, scanner.Text())
+	}
+	for i := 0; i < len(sshdConfigData); i++ {
+		if strings.HasPrefix(sshdConfigData[i], "#") {
+			continue
+		}
+		if strings.Contains(sshdConfigData[i], "AllowTcpForwarding") {
+			if strings.TrimSpace(strings.ReplaceAll(sshdConfigData[i], "AllowTcpForwarding", "")) == "no" {
+				sshdConfigData[i] = "AllowTcpForwarding yes"
+				shouldEnableTcpForwarding = false
+			}
+		}
+	}
+	if shouldEnableTcpForwarding {
+		sshdConfigData = append(sshdConfigData, "AllowTcpForwarding yes")
+	}
+	file, err = os.OpenFile(sshdConfig, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModeAppend)
+	if err != nil {
+		logrus.Errorf("err: %v, error opening sshd config", err)
+		panic(err)
+	}
+	if err := file.Truncate(0); err != nil {
+		logrus.Errorf("err: %v, error truncating sshd config", err)
+		panic(err)
+	}
+	if _, err := file.WriteString(strings.Join(sshdConfigData, "\n")); err != nil {
+		logrus.Errorf("err: %v, error writing sshd config", err)
+		panic(err)
+	}
 }
 
 func isUserExists(user string) bool {
