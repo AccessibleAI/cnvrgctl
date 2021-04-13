@@ -307,38 +307,47 @@ func fixPermissions() {
 }
 
 func saveTools() {
-	tools := []string{"k9s", "kubectl", "rke"}
-
-	for _, toolName := range tools {
+	binTools := []string{"k9s", "kubectl", "rke"}
+	manifests := []string{"cnvrg-crds.yaml", "cnvrg-operator.yaml"}
+	for _, toolName := range binTools {
 		logrus.Infof("dumping %s", toolName)
 		dst := "/usr/local/bin/" + toolName
-		f, err := pkger.Open("/pkg/assets/" + toolName)
-		if err != nil {
-			logrus.Fatal(err)
-			panic(err)
-		}
-		destination, err := os.Create(dst)
-		if err != nil {
-			logrus.Fatal(err)
-			panic(err)
-		}
-		defer destination.Close()
-		_, err = io.Copy(destination, f)
-		if err != nil {
-			logrus.Fatal(err)
-			panic(err)
-		}
-		uid, gid := getUserUidGid()
-		if err = os.Chown(dst, uid, gid); err != nil {
-			logrus.Fatal(err)
-			panic(err)
-		}
-		if err := os.Chmod(dst, 0755); err != nil {
-			logrus.Fatal(err)
-			panic(err)
-		}
+		saveAsset(dst, toolName)
 	}
+	for _, manifest := range manifests {
+		logrus.Infof("dumping %s", manifest)
+		dst := rkeDir + "/" + manifest
+		saveAsset(dst, manifest)
+	}
+}
 
+func saveAsset(dst string, toolName string) {
+	logrus.Infof("dumping %s", toolName)
+	f, err := pkger.Open("/pkg/assets/" + toolName)
+	if err != nil {
+		logrus.Fatal(err)
+		panic(err)
+	}
+	destination, err := os.Create(dst)
+	if err != nil {
+		logrus.Fatal(err)
+		panic(err)
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, f)
+	if err != nil {
+		logrus.Fatal(err)
+		panic(err)
+	}
+	uid, gid := getUserUidGid()
+	if err = os.Chown(dst, uid, gid); err != nil {
+		logrus.Fatal(err)
+		panic(err)
+	}
+	if err := os.Chmod(dst, 0755); err != nil {
+		logrus.Fatal(err)
+		panic(err)
+	}
 }
 
 func getMainIp() string {
