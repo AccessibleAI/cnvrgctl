@@ -468,8 +468,16 @@ func rkeUp() {
 		panic(err)
 	}
 
-	// copy kubeconfig file to default location
-	args = []string{"-c", fmt.Sprintf(`mkdir -p ~/.kube && cp %s/kube_config_cluster.yml ~/.kube/config && cp su - cnvrg -c "cp %s/kube_config_cluster.yml %s/.kube/config"`, rkeDir, rkeDir, home)}
+	// copy kubeconfig file for cnvrg user
+	args = []string{"-lc", fmt.Sprintf(`su - cnvrg -c "cp %s/kube_config_cluster.yml %s/.kube/config"`, rkeDir, home)}
+	cmd = exec.Command("/bin/bash", args...)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		logrus.Error(err)
+		panic(err)
+	}
+
+	// copy kubeconfig file for root user (or current user)
+	args = []string{"-lc", fmt.Sprintf(`mkdir -p ~/.kube/config && cp %s/kube_config_cluster.yml ~/.kube/config"`, rkeDir)}
 	cmd = exec.Command("/bin/bash", args...)
 	if _, err := cmd.CombinedOutput(); err != nil {
 		logrus.Error(err)
