@@ -211,13 +211,13 @@ func generateKeys() {
 
 	privateKeyBytes := encodePrivateKeyToPEM(privateKey)
 
-	err = writeKeyToFile(privateKeyBytes, sshKeysDir+"/rke_id_rsa")
+	err = writeKeyToFile(privateKeyBytes, sshPrivateKey)
 	if err != nil {
 		logrus.Error(err.Error())
 		panic(err)
 	}
 
-	err = writeKeyToFile([]byte(publicKeyBytes), sshKeysDir+"/rke_id_rsa.pub")
+	err = writeKeyToFile([]byte(publicKeyBytes), sshPublicKey)
 	if err != nil {
 		logrus.Error(err.Error())
 		panic(err)
