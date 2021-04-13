@@ -49,7 +49,6 @@ var ClusterUpCmd = &cobra.Command{
 		createUser()
 		generateKeys()
 		saveTools()
-		getMainIp()
 		generateRkeClusterManifest()
 		fixPermissions()
 	},
@@ -312,7 +311,7 @@ func getMainIp() string {
 		logrus.Errorf("interface does not have any IP addesses")
 		panic(err)
 	}
-	logrus.Info(ipv4Addr.String())
+	logrus.Infof("node main IP: %s", ipv4Addr.String())
 	return ipv4Addr.String()
 
 }
@@ -335,7 +334,7 @@ func getMainNic() string {
 		logrus.Errorf("%s doesn't contains enougth information, %v", procRouteFile, nic)
 		panic(err)
 	}
-	logrus.Infof("detected node ip address: %s", nic[0])
+	logrus.Infof("detected node main nic: %s", nic[0])
 	return nic[0]
 }
 
@@ -375,7 +374,7 @@ func generateRkeClusterManifest() {
 		panic(err)
 	}
 
-	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0655); err != nil {
+	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0644); err != nil {
 		logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
 		panic(err)
 	}
