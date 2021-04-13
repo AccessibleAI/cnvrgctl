@@ -10,6 +10,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5
+	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/manifoldco/promptui v0.8.0
 	github.com/markbates/pkger v0.17.1
 	github.com/morikuni/aec v1.0.0 // indirect

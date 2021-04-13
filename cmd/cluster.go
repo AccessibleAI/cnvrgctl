@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/cnvrgctl/pkg/cnvrg"
+	emoji "github.com/kyokomi/emoji/v2"
 	"github.com/markbates/pkger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -485,7 +486,7 @@ func checkClusterReady() {
 			panic(err)
 		}
 		if ready {
-			logrus.Info("k8s is ready!")
+			logrus.Infof("K8s is ready, time to deploy cnvrg %s", emoji.Sprint(" :rocket: !"))
 			break
 		}
 		logrus.Infof("checking k8s ready status, attempt left: %d ...", 20-i)
