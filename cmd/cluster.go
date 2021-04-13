@@ -12,6 +12,7 @@ import (
 	"github.com/markbates/pkger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"
@@ -57,6 +58,7 @@ var ClusterUpCmd = &cobra.Command{
 		allowTcpForwarding()
 		fixPermissions()
 		rkeUp()
+		checkClusterReady()
 	},
 }
 
@@ -462,7 +464,10 @@ func rkeUp() {
 		logrus.Error(err)
 		panic(err)
 	}
+}
 
+func checkClusterReady() {
+	viper.Set("kubeconfig", fmt.Sprintf("%s/.kube/config", home))
 	for i := 1; i <= 20; i++ {
 		ready, err := cnvrg.CheckNodesReadyStatus()
 		if err != nil {
@@ -476,5 +481,4 @@ func rkeUp() {
 		logrus.Infof("checking k8s ready status, attempt left: %d ...", 20-i)
 		time.Sleep(10 * time.Second)
 	}
-
 }
