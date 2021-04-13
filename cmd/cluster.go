@@ -434,7 +434,6 @@ func generateRkeClusterManifest() {
 func rkeUp() {
 	args := []string{"-c", fmt.Sprintf(`su - cnvrg -c "cd %s && rke up"`, rkeDir)}
 	cmd := exec.Command("/bin/bash", args...)
-
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
 		logrus.Errorf("%v error creating StdoutPipe for cmd", os.Stderr)
@@ -450,8 +449,15 @@ func rkeUp() {
 		logrus.Error(err)
 		panic(err)
 	}
-
 	if err := cmd.Wait(); err != nil {
+		logrus.Error(err)
+		panic(err)
+	}
+
+	// copy kubeconfig file to default location
+	args = []string{"-c", fmt.Sprintf(`su - cnvrg -c "cp %s/kube_config_cluster.yml %s/.kube/config"`, rkeDir, home)}
+	cmd = exec.Command("/bin/bash", args...)
+	if _, err := cmd.CombinedOutput(); err != nil {
 		logrus.Error(err)
 		panic(err)
 	}
