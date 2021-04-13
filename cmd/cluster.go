@@ -258,7 +258,7 @@ func saveTools() {
 
 	for _, toolName := range tools {
 		logrus.Infof("dumping %s", toolName)
-		dst := home + "/" + toolName
+		dst := "/usr/local/bin/" + toolName
 		f, err := pkger.Open("/pkg/assets/" + toolName)
 		if err != nil {
 			logrus.Fatal(err)
@@ -369,6 +369,7 @@ func generateRkeClusterManifest() {
 		panic(err)
 	}
 
+	// dir for rke
 	if err := os.MkdirAll(rkeDir, os.ModePerm); err != nil {
 		logrus.Errorf("err: %v, faild to create %v", err, rkeDir)
 		panic(err)
