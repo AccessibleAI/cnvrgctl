@@ -476,13 +476,13 @@ func rkeUp() {
 		panic(err)
 	}
 
-	// copy kubeconfig file for root user (or current user)
-	args = []string{"-lc", fmt.Sprintf(`mkdir -p ~/.kube/config && cp %s/kube_config_cluster.yml ~/.kube/config"`, rkeDir)}
-	cmd = exec.Command("/bin/bash", args...)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		logrus.Error(err)
-		panic(err)
-	}
+	//// copy kubeconfig file for root user (or current user)
+	//args = []string{"-lc", fmt.Sprintf(`mkdir -p ~/.kube/config && cp %s/kube_config_cluster.yml ~/.kube/config"`, rkeDir)}
+	//cmd = exec.Command("/bin/bash", args...)
+	//if _, err := cmd.CombinedOutput(); err != nil {
+	//	logrus.Error(err)
+	//	panic(err)
+	//}
 }
 
 func checkClusterReady() {
