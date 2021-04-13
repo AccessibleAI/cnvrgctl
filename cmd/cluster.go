@@ -486,7 +486,7 @@ func checkClusterReady() {
 			panic(err)
 		}
 		if ready {
-			logrus.Infof("K8s is ready, time to deploy cnvrg %s! (run: cnvrgctl cnvrg up -h %s)", emoji.Sprint(":rocket:!"), emoji.Sprint(":nerd:"))
+			logrus.Infof("K8s is ready, time to deploy cnvrg %s! (run: cnvrgctl cnvrg up -h)", emoji.Sprint(":rocket:"))
 			break
 		}
 		logrus.Infof("checking k8s ready status, attempt left: %d ...", 20-i)
