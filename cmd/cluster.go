@@ -30,7 +30,7 @@ var (
 	sshPrivateKey = "/home/cnvrg/.ssh/rke_id_rsa"
 	sshPublicKey  = "/home/cnvrg/.ssh/rke_id_rsa.pub"
 	encPass       = "paMfuNMgwFAX2"
-	rkeDir        = "/home/cnvrg/rke"
+	rkeDir        = "/home/cnvrg/rke-cluster"
 )
 
 var ClusterUpParams = []Param{
@@ -190,17 +190,17 @@ func generateKeys() {
 	sshKeysDir := home + "/.ssh"
 
 	if err := os.MkdirAll(sshKeysDir, os.ModePerm); err != nil {
-		logrus.Fatalf("err: %v, faild to create %v", err, sshKeysDir)
+		logrus.Errorf("err: %v, faild to create %v", err, sshKeysDir)
 	}
 
 	privateKey, err := generatePrivateKey(bitSize)
 	if err != nil {
-		logrus.Fatalf("err: %v, error generating private key", err)
+		logrus.Errorf("err: %v, error generating private key", err)
 	}
 
 	publicKeyBytes, err := generatePublicKey(&privateKey.PublicKey)
 	if err != nil {
-		logrus.Fatalf("err: %v, error generating public key", err)
+		logrus.Errorf("err: %v, error generating public key", err)
 	}
 
 	privateKeyBytes := encodePrivateKeyToPEM(privateKey)
@@ -278,11 +278,11 @@ func getMainIp() string {
 
 	nic, err := net.InterfaceByName(getMainNic())
 	if err != nil {
-		logrus.Fatalf("%s can't get interface", err)
+		logrus.Errorf("%s can't get interface", err)
 	}
 	addrs, err := nic.Addrs()
 	if err != nil { // get addresses
-		logrus.Fatalf("%s can't get interface addesses", err)
+		logrus.Errorf("%s can't get interface addesses", err)
 	}
 	for _, addr := range addrs { // get ipv4 address
 		ipv4Addr = addr.(*net.IPNet).IP.To4()
@@ -291,7 +291,7 @@ func getMainIp() string {
 		}
 	}
 	if ipv4Addr == nil {
-		logrus.Fatalf("interface does not have any IP addesses")
+		logrus.Errorf("interface does not have any IP addesses")
 	}
 	logrus.Info(ipv4Addr.String())
 	return ipv4Addr.String()
@@ -307,11 +307,11 @@ func getMainNic() string {
 	}
 	routeData := strings.Split(string(b), "\n")
 	if len(routeData) < 2 {
-		logrus.Fatalf("%s doesn't contains enougth information, %v", procRouteFile, routeData)
+		logrus.Errorf("%s doesn't contains enougth information, %v", procRouteFile, routeData)
 	}
 	nic := strings.Split(routeData[1], "\t")
 	if len(nic) < 1 || nic[0] == "" {
-		logrus.Fatalf("%s doesn't contains enougth information, %v", procRouteFile, nic)
+		logrus.Errorf("%s doesn't contains enougth information, %v", procRouteFile, nic)
 	}
 	logrus.Infof("detected node ip address: %s", nic[0])
 	return nic[0]
@@ -330,25 +330,25 @@ func generateRkeClusterManifest() {
 	clusterManifestTpl := "/pkg/assets/cluster.tpl"
 	f, err := pkger.Open(clusterManifestTpl)
 	if err != nil {
-		logrus.Fatalf("error reading cluster.tpl %v", err)
+		logrus.Errorf("error reading cluster.tpl %v", err)
 	}
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-		logrus.Fatalf("%v, error reading file: %v", err, clusterManifestTpl)
+		logrus.Errorf("%v, error reading file: %v", err, clusterManifestTpl)
 	}
 	clusterTmpl, err := template.New(strings.ReplaceAll(clusterManifestTpl, "/", "-")).Parse(string(b))
 	if err != nil {
-		logrus.Fatalf("%v, template: %v", err, clusterManifestTpl)
+		logrus.Errorf("%v, template: %v", err, clusterManifestTpl)
 	}
 	if err = clusterTmpl.Execute(&tpl, templateData); err != nil {
-		logrus.Fatalf("err: %v rendering template error", err)
+		logrus.Errorf("err: %v rendering template error", err)
 	}
 
 	if err := os.MkdirAll(rkeDir, os.ModePerm); err != nil {
-		logrus.Fatalf("err: %v, faild to create %v", err, rkeDir)
+		logrus.Errorf("err: %v, faild to create %v", err, rkeDir)
 	}
 
 	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0655); err != nil {
-		logrus.Fatalf("err: %v, faild to cluster.yml %v", err, rkeDir)
+		logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
 	}
 }
