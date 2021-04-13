@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/cnvrgctl/pkg/cnvrg"
 	"github.com/markbates/pkger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 var (
@@ -55,7 +57,6 @@ var ClusterUpCmd = &cobra.Command{
 		allowTcpForwarding()
 		fixPermissions()
 		rkeUp()
-
 	},
 }
 
@@ -461,4 +462,19 @@ func rkeUp() {
 		logrus.Error(err)
 		panic(err)
 	}
+
+	for i := 1; i <= 20; i++ {
+		ready, err := cnvrg.CheckNodesReadyStatus()
+		if err != nil {
+			logrus.Errorf("err: %v, can't list K8s nodes", err)
+			panic(err)
+		}
+		if ready {
+			logrus.Info("k8s is ready!")
+			break
+		}
+		logrus.Infof("checking k8s ready status, attempt left: %d ...", 20-i)
+		time.Sleep(10 * time.Second)
+	}
+
 }
