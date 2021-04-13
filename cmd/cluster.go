@@ -13,7 +13,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -87,6 +86,7 @@ func createUser() {
 		userCmd := exec.Command("useradd", argUser...)
 		if out, err := userCmd.CombinedOutput(); err != nil {
 			logrus.Errorf("err: %v, there was an error by adding user cnvrg", err)
+			panic(err)
 		} else {
 			logrus.Info(string(out))
 		}
@@ -145,6 +145,7 @@ func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
 	err := ioutil.WriteFile(saveFileTo, keyBytes, 0600)
 	if err != nil {
 		return err
+
 	}
 	logrus.Infof("key saved to: %s", saveFileTo)
 	u, err := user.Lookup(cnvrgUser)
@@ -164,18 +165,21 @@ func createAuthorizedKeysFile() {
 	in, err := os.Open(src)
 	if err != nil {
 		logrus.Fatal(err)
+		panic(err)
 	}
 	defer in.Close()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		logrus.Fatal(err)
+		panic(err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
 	if err != nil {
 		logrus.Fatal(err)
+		panic(err)
 	}
 	defer out.Close()
 }
@@ -191,28 +195,33 @@ func generateKeys() {
 
 	if err := os.MkdirAll(sshKeysDir, os.ModePerm); err != nil {
 		logrus.Errorf("err: %v, faild to create %v", err, sshKeysDir)
+		panic(err)
 	}
 
 	privateKey, err := generatePrivateKey(bitSize)
 	if err != nil {
 		logrus.Errorf("err: %v, error generating private key", err)
+		panic(err)
 	}
 
 	publicKeyBytes, err := generatePublicKey(&privateKey.PublicKey)
 	if err != nil {
 		logrus.Errorf("err: %v, error generating public key", err)
+		panic(err)
 	}
 
 	privateKeyBytes := encodePrivateKeyToPEM(privateKey)
 
 	err = writeKeyToFile(privateKeyBytes, sshKeysDir+"/rke_id_rsa")
 	if err != nil {
-		log.Fatal(err.Error())
+		logrus.Error(err.Error())
+		panic(err)
 	}
 
 	err = writeKeyToFile([]byte(publicKeyBytes), sshKeysDir+"/rke_id_rsa.pub")
 	if err != nil {
-		log.Fatal(err.Error())
+		logrus.Error(err.Error())
+		panic(err)
 	}
 
 	createAuthorizedKeysFile()
@@ -222,6 +231,7 @@ func getUserUidGid() (uid, gid int) {
 	u, err := user.Lookup(cnvrgUser)
 	if err != nil {
 		logrus.Fatal(err)
+		panic(err)
 	}
 	uid, _ = strconv.Atoi(u.Uid)
 	gid, _ = strconv.Atoi(u.Gid)
@@ -239,6 +249,7 @@ func fixPermissions() {
 	})
 	if err != nil {
 		logrus.Fatal(err)
+		panic(err)
 	}
 
 }
@@ -252,22 +263,27 @@ func saveTools() {
 		f, err := pkger.Open("/pkg/assets/" + toolName)
 		if err != nil {
 			logrus.Fatal(err)
+			panic(err)
 		}
 		destination, err := os.Create(dst)
 		if err != nil {
 			logrus.Fatal(err)
+			panic(err)
 		}
 		defer destination.Close()
 		_, err = io.Copy(destination, f)
 		if err != nil {
 			logrus.Fatal(err)
+			panic(err)
 		}
 		uid, gid := getUserUidGid()
 		if err = os.Chown(dst, uid, gid); err != nil {
 			logrus.Fatal(err)
+			panic(err)
 		}
 		if err := os.Chmod(dst, 0755); err != nil {
 			logrus.Fatal(err)
+			panic(err)
 		}
 	}
 
@@ -279,10 +295,12 @@ func getMainIp() string {
 	nic, err := net.InterfaceByName(getMainNic())
 	if err != nil {
 		logrus.Errorf("%s can't get interface", err)
+		panic(err)
 	}
 	addrs, err := nic.Addrs()
 	if err != nil { // get addresses
 		logrus.Errorf("%s can't get interface addesses", err)
+		panic(err)
 	}
 	for _, addr := range addrs { // get ipv4 address
 		ipv4Addr = addr.(*net.IPNet).IP.To4()
@@ -292,6 +310,7 @@ func getMainIp() string {
 	}
 	if ipv4Addr == nil {
 		logrus.Errorf("interface does not have any IP addesses")
+		panic(err)
 	}
 	logrus.Info(ipv4Addr.String())
 	return ipv4Addr.String()
@@ -303,15 +322,18 @@ func getMainNic() string {
 	procRouteFile := "/proc/net/route"
 	b, err := ioutil.ReadFile(procRouteFile)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Error(err)
+		panic(err)
 	}
 	routeData := strings.Split(string(b), "\n")
 	if len(routeData) < 2 {
 		logrus.Errorf("%s doesn't contains enougth information, %v", procRouteFile, routeData)
+		panic(err)
 	}
 	nic := strings.Split(routeData[1], "\t")
 	if len(nic) < 1 || nic[0] == "" {
 		logrus.Errorf("%s doesn't contains enougth information, %v", procRouteFile, nic)
+		panic(err)
 	}
 	logrus.Infof("detected node ip address: %s", nic[0])
 	return nic[0]
@@ -331,24 +353,30 @@ func generateRkeClusterManifest() {
 	f, err := pkger.Open(clusterManifestTpl)
 	if err != nil {
 		logrus.Errorf("error reading cluster.tpl %v", err)
+		panic(err)
 	}
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		logrus.Errorf("%v, error reading file: %v", err, clusterManifestTpl)
+		panic(err)
 	}
 	clusterTmpl, err := template.New(strings.ReplaceAll(clusterManifestTpl, "/", "-")).Parse(string(b))
 	if err != nil {
 		logrus.Errorf("%v, template: %v", err, clusterManifestTpl)
+		panic(err)
 	}
 	if err = clusterTmpl.Execute(&tpl, templateData); err != nil {
 		logrus.Errorf("err: %v rendering template error", err)
+		panic(err)
 	}
 
 	if err := os.MkdirAll(rkeDir, os.ModePerm); err != nil {
 		logrus.Errorf("err: %v, faild to create %v", err, rkeDir)
+		panic(err)
 	}
 
 	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0655); err != nil {
 		logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
+		panic(err)
 	}
 }
