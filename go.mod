@@ -11,13 +11,11 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5
 	github.com/kyokomi/emoji/v2 v2.2.8
-	github.com/manifoldco/promptui v0.8.0
 	github.com/markbates/pkger v0.17.1
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.20.1
 	k8s.io/apimachinery v0.20.1
