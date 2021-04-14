@@ -1,3 +1,4 @@
+set -e
 downloadTools(){
   echo "downloading tools"
 
@@ -43,15 +44,52 @@ downloadTools(){
   fi
 }
 
-createUser(){
+hasSudo() {
+    local prompt
+    prompt=$(sudo -nv 2>&1)
+    if [ $? -eq 0 ]; then
+    echo "has_sudo__pass_set"
+    elif echo $prompt | grep -q '^sudo:'; then
+    echo "has_sudo__needs_pass"
+    else
+    echo "no_sudo"
+    fi
+}
 
+patchSshUser(){
+  userSudo=$(hasSudo)
+  if [[ $userSudo == "has_sudo__pass_set" ]]; then
+    echo "user has sudo access and password is set, no need to patch"
+    sudo groupadd cnvrg-sudoers
+    sudo su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
+  elif [[ $userSudo == "has_sudo__needs_pass" ]]; then
+
+    cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
+    if [[ $cnvrgSudoersGroupExists -eq 0 ]]; then
+      echo $PASSWD | sudo -S groupadd cnvrg-sudoers
+    else
+      echo "cnvrg-sudoers group already exists"
+    fi
+    echo $PASSWD | sudo -S su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
+    echo $PASSWD | sudo -S usermod -a -G cnvrg-sudoers {{ .Data.SshUser }}
+  else
+    >&2 echo "user does not have sudo access, unable proceed with deployment"
+    exit 1
+  fi
+}
+
+createUser(){
   userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
   if [[ $userExists -eq 0 ]]; then
-    echo "creating user for cnvrg"
-    useradd -m -d /home/{{ .Data.CnvrgUser }} -s /bin/bash -p paMfuNMgwFAX2 --groups docker,sudo {{ .Data.CnvrgUser }}
+    echo "creating user cnvrg"
+    useradd -m -d /home/{{ .Data.CnvrgUser }} -s /bin/bash -p paMfuNMgwFAX2 --groups sudo {{ .Data.CnvrgUser }}
   else
     echo "user for cnvrg already exists, skipping user creation"
   fi
+}
+
+addUserToGroups(){
+  usermod -a -G sudo,docker {{ .Data.CnvrgUser }}
 }
 
 installDocker(){
@@ -70,9 +108,10 @@ generateSSHKeys(){
   fi
 }
 
-actions="downloadTools|createUser|installDocker|generateSSHKeys"
+actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser"
 if [ "$#" -ne 1 ]; then
     echo "missing action parameter, provide one of the following: $actions"
+    exit 1
 fi
 
 case $1 in
@@ -87,6 +126,12 @@ case $1 in
   ;;
 "generateSSHKeys")
   generateSSHKeys
+  ;;
+"addUserToGroups")
+  addUserToGroups
+  ;;
+"patchSshUser")
+  patchSshUser
   ;;
 *)
   echo "ERROR: acceptable values for action: $actions"

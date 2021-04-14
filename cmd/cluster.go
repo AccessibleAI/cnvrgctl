@@ -34,6 +34,11 @@ var ClusterUpParams = []Param{
 	{Name: "single-node", Value: true, Usage: "create single node K8s cnvrg cluster"},
 	{Name: "cnvrg-user", Value: "cnvrg", Usage: "user for managing cnvrg stack"},
 	{Name: "install-docker", Value: true, Usage: "set to false to disable docker installation"},
+	{Name: "host", Value: "", Usage: "destination host for K8s deployment"},
+	{Name: "ssh-port", Value: 22, Usage: "ssh port"},
+	{Name: "ssh-user", Value: "", Usage: "user for ssh connection"},
+	{Name: "ssh-pass", Value: "", Usage: "password for ssh connection"},
+	{Name: "ssh-key", Value: "", Usage: "private key for ssh connection"},
 }
 
 var ClusterCmd = &cobra.Command{
@@ -46,11 +51,35 @@ var ClusterUpCmd = &cobra.Command{
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.Infof("deploying k8s cluster")
-		generateClusterSetupScript()
-		if viper.GetBool("install-docker") {
-			pkg.ExecBashScript("cluster-setup.sh installDocker")
+		if err := pkg.SSHCopyFile(generateClusterSetupScript(), "/tmp/cluster-setup.sh"); err != nil {
+			logrus.Error(err)
+			panic(err)
 		}
-		pkg.ExecBashScript("cluster-setup.sh createUser")
+
+		// prepare deployment scripts
+		logrus.Infof("copying deployment scripts")
+		pkg.ExecSshBashScript(`chmod 0755 /tmp/cluster-setup.sh`)
+
+		pkg.ExecSshBashScript(fmt.Sprintf(`PASSWD=%s /tmp/cluster-setup.sh patchSshUser`, viper.GetString("ssh-pass")))
+
+		//// installing docker
+		//if viper.GetBool("install-docker") {
+		//	logrus.Infof("installing docker")
+		//	pkg.ExecSshBashScript(`sudo cluster-setup.sh installDocker`)
+		//}
+		//
+		//// create user for cnvrg
+		//logrus.Infof("creating %s user", viper.GetString("cnvrg-user"))
+		//pkg.ExecSshBashScript(`sudo cluster-setup.sh createUser`)
+		//
+		//// add user to sudo,docker groups
+		//logrus.Infof("adding %s user to groups", viper.GetString("cnvrg-user"))
+		//pkg.ExecSshBashScript(`sudo cluster-setup.sh addUserToGroups`)
+
+		//if viper.GetBool("install-docker") {
+		//	pkg.ExecBashScript("cluster-setup.sh installDocker")
+		//}
+		//pkg.ExecBashScript("cluster-setup.sh createUser")
 		//dumpDeploymentAssets()
 		//generateRkeClusterManifest()
 		//fixPermissions()
@@ -59,10 +88,11 @@ var ClusterUpCmd = &cobra.Command{
 	},
 }
 
-func generateClusterSetupScript() {
+func generateClusterSetupScript() string {
 	templateData := map[string]interface{}{
 		"Data": map[string]interface{}{
 			"CnvrgUser": viper.GetString("cnvrg-user"),
+			"SshUser":   viper.GetString("ssh-user"),
 		},
 	}
 	buffer, err := renderTemplate("/pkg/assets/cluster-setup.sh", templateData)
@@ -73,12 +103,13 @@ func generateClusterSetupScript() {
 
 	if viper.GetBool("dry-run") {
 		logrus.Infof("\n%s", buffer.String())
-		return
+		return ""
 	}
-	if err := ioutil.WriteFile("/usr/local/bin/cluster-setup.sh", buffer.Bytes(), 0755); err != nil {
-		logrus.Errorf("err: %v, faild to save cluster-setup.sh %v", err, rkeDir)
-		panic(err)
-	}
+	//if err := ioutil.WriteFile("/usr/local/bin/cluster-setup.sh", buffer.Bytes(), 0755); err != nil {
+	//	logrus.Errorf("err: %v, faild to save cluster-setup.sh %v", err, rkeDir)
+	//	panic(err)
+	//}
+	return buffer.String()
 
 }
 

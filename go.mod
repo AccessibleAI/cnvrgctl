@@ -13,9 +13,11 @@ require (
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/markbates/pkger v0.17.1
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/pkg/sftp v1.13.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.20.1
 	k8s.io/apimachinery v0.20.1
