@@ -59,9 +59,18 @@ hasSudo() {
 patchSshUser(){
   userSudo=$(hasSudo)
   if [[ $userSudo == "has_sudo__pass_set" ]]; then
+
     echo "user has sudo access and password is set, no need to patch"
-    sudo groupadd cnvrg-sudoers
+
+    cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
+    if [[ $cnvrgSudoersGroupExists -eq 0 ]]; then
+      sudo groupadd cnvrg-sudoers
+    else
+      echo "cnvrg-sudoers group already exists"
+    fi
+
     sudo su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
+
   elif [[ $userSudo == "has_sudo__needs_pass" ]]; then
 
     cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
@@ -72,9 +81,12 @@ patchSshUser(){
     fi
     echo $PASSWD | sudo -S su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
     echo $PASSWD | sudo -S usermod -a -G cnvrg-sudoers {{ .Data.SshUser }}
+
   else
+
     >&2 echo "user does not have sudo access, unable proceed with deployment"
     exit 1
+
   fi
 }
 
