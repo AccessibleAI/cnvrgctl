@@ -50,42 +50,97 @@ var ClusterUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "bring up cnvrg single nodes k8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
+		cnvrgUser := viper.GetString("cnvrg-user")
 		logrus.Infof("deploying k8s cluster")
-		if err := pkg.SSHCopyFile(generateClusterSetupScript(), "/tmp/cluster-setup.sh"); err != nil {
-			logrus.Error(err)
-			panic(err)
+		prepareSetup()
+
+		//installing docker
+		if viper.GetBool("install-docker") {
+			logrus.Infof("installing docker")
+			pkg.ExecSshBashScript(`sudo cluster-setup.sh installDocker`)
 		}
 
-		// prepare deployment scripts
-		logrus.Infof("copying deployment scripts")
-		pkg.ExecSshBashScript(`chmod 0755 /tmp/cluster-setup.sh`)
+		// create user for cnvrg
+		logrus.Infof("creating %s user", cnvrgUser)
+		pkg.ExecSshBashScript(`sudo cluster-setup.sh createUser`)
 
-		pkg.ExecSshBashScript(fmt.Sprintf(`PASSWD=%s /tmp/cluster-setup.sh patchSshUser`, viper.GetString("ssh-pass")))
+		// add user to sudo,docker groups
+		logrus.Infof("adding %s user to groups", cnvrgUser)
+		pkg.ExecSshBashScript(`sudo cluster-setup.sh addUserToGroups`)
 
-		//// installing docker
-		//if viper.GetBool("install-docker") {
-		//	logrus.Infof("installing docker")
-		//	pkg.ExecSshBashScript(`sudo cluster-setup.sh installDocker`)
-		//}
-		//
-		//// create user for cnvrg
-		//logrus.Infof("creating %s user", viper.GetString("cnvrg-user"))
-		//pkg.ExecSshBashScript(`sudo cluster-setup.sh createUser`)
-		//
-		//// add user to sudo,docker groups
-		//logrus.Infof("adding %s user to groups", viper.GetString("cnvrg-user"))
-		//pkg.ExecSshBashScript(`sudo cluster-setup.sh addUserToGroups`)
+		// generate ssh keys
+		logrus.Infof("generating ssh keys")
+		pkg.ExecSshBashScript(`sudo su ` + cnvrgUser + ` -c "cluster-setup.sh generateSSHKeys"`)
 
-		//if viper.GetBool("install-docker") {
-		//	pkg.ExecBashScript("cluster-setup.sh installDocker")
-		//}
-		//pkg.ExecBashScript("cluster-setup.sh createUser")
+		// get node main ip
+		logrus.Infof("getting node main ip")
+		output := pkg.ExecSshBashScript("sudo cluster-setup.sh getMainIp")
+		fmt.Printf(strings.Join(output, ""))
+
 		//dumpDeploymentAssets()
 		//generateRkeClusterManifest()
 		//fixPermissions()
 		//rkeUp()
 		//checkClusterReady()
 	},
+}
+
+func prepareSetup() {
+	tmpDir := fmt.Sprintf("/tmp/%s", viper.GetString("ssh-user"))
+	tmpClusterSetup := fmt.Sprintf("%s/cluster-setup.sh", tmpDir)
+	pkg.ExecSshBashScript("mkdir -p " + tmpDir)
+	if err := pkg.SSHCopyFile(generateClusterSetupScript(), tmpClusterSetup); err != nil {
+		logrus.Error(err)
+		panic(err)
+	}
+	// prepare deployment scripts
+	logrus.Infof("copying deployment scripts")
+	pkg.ExecSshBashScript(`chmod 0755 ` + tmpClusterSetup)
+	pkg.ExecSshBashScript(fmt.Sprintf(`PASSWD=%s `+tmpClusterSetup+` patchSshUser`, viper.GetString("ssh-pass")))
+	pkg.ExecSshBashScript(`sudo cp ` + tmpClusterSetup + " /usr/local/bin/cluster-setup.sh")
+}
+
+func generateRkeClusterManifest() {
+	var tpl bytes.Buffer
+	templateData := map[string]interface{}{
+		"Data": map[string]interface{}{
+			"Server":        getMainIp(),
+			"User":          viper.GetString("cnvrg-user"),
+			"SshPrivateKey": sshPrivateKey,
+		},
+	}
+
+	clusterManifestTpl := "/pkg/assets/cluster.tpl"
+	f, err := pkger.Open(clusterManifestTpl)
+	if err != nil {
+		logrus.Errorf("error reading cluster.tpl %v", err)
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		logrus.Errorf("%v, error reading file: %v", err, clusterManifestTpl)
+		panic(err)
+	}
+	clusterTmpl, err := template.New(strings.ReplaceAll(clusterManifestTpl, "/", "-")).Parse(string(b))
+	if err != nil {
+		logrus.Errorf("%v, template: %v", err, clusterManifestTpl)
+		panic(err)
+	}
+	if err = clusterTmpl.Execute(&tpl, templateData); err != nil {
+		logrus.Errorf("err: %v rendering template error", err)
+		panic(err)
+	}
+
+	// dir for rke
+	if err := os.MkdirAll(rkeDir, os.ModePerm); err != nil {
+		logrus.Errorf("err: %v, faild to create %v", err, rkeDir)
+		panic(err)
+	}
+
+	if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0644); err != nil {
+		logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
+		panic(err)
+	}
 }
 
 func generateClusterSetupScript() string {

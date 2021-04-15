@@ -8,14 +8,15 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
 )
 
-func ExecBashCommand(command string, args []string) (string, error) {
-	userCmd := exec.Command(command, args...)
+func ExecBashCommand(args []string) (string, error) {
+	cmdArgs := []string{"-lc"}
+	cmdArgs = append(cmdArgs, args...)
+	userCmd := exec.Command("/bin/bash", cmdArgs...)
 	if out, err := userCmd.CombinedOutput(); err != nil {
 		return string(out), err
 	} else {
@@ -23,34 +24,10 @@ func ExecBashCommand(command string, args []string) (string, error) {
 	}
 }
 
-func ExecBashScript(script string) {
-	args := append([]string{"-lc"}, script)
-	cmd := exec.Command("/bin/bash", args...)
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		logrus.Errorf("%v error creating StdoutPipe for cmd", os.Stderr)
-		panic(err)
-	}
-	scanner := bufio.NewScanner(cmdReader)
-	go func() {
-		for scanner.Scan() {
-			logrus.Infof("%s", scanner.Text())
-		}
-	}()
-	if err := cmd.Start(); err != nil {
-		logrus.Error(err)
-		panic(err)
-	}
-	if err := cmd.Wait(); err != nil {
-		logrus.Error(err)
-		panic(err)
-	}
-}
-
-func ExecSshBashScript(command string) {
+func ExecSshBashScript(command string) []string {
 	if viper.GetBool("dry-run") {
 		logrus.Info("dry-run enabled, skipping ExecSshCommand")
-		return
+		return nil
 	}
 	config := sshClientConfig()
 	sshHost := hostAddress()
@@ -61,7 +38,7 @@ func ExecSshBashScript(command string) {
 	defer conn.Close()
 	command = fmt.Sprintf("/bin/bash -lc '%s'", command)
 	logrus.Infof("[%s] executing %s ", sshHost, command)
-	runCommand(command, conn)
+	return runCommand(command, conn)
 }
 
 func SSHCopyFile(scriptStr, dstPath string) error {
@@ -113,7 +90,8 @@ func getAuthMethod() []ssh.AuthMethod {
 
 }
 
-func runCommand(cmd string, conn *ssh.Client) {
+func runCommand(cmd string, conn *ssh.Client) []string {
+	var output []string
 	sess, err := conn.NewSession()
 	if err != nil {
 		panic(err)
@@ -127,7 +105,9 @@ func runCommand(cmd string, conn *ssh.Client) {
 	stdoutScanner := bufio.NewScanner(sessStdOut)
 	go func() {
 		for stdoutScanner.Scan() {
-			logrus.Infof("%s", stdoutScanner.Text())
+			stdout := stdoutScanner.Text()
+			output = append(output, stdout)
+			logrus.Infof("%s", stdout)
 		}
 	}()
 
@@ -141,15 +121,12 @@ func runCommand(cmd string, conn *ssh.Client) {
 			logrus.Errorf("%s", stderrScanner.Text())
 		}
 	}()
-	//
-	//go func() {
-	//	io.Copy(os.Stderr, sessStderr)
-	//}()
 
 	err = sess.Run(cmd)
 	if err != nil {
 		panic(err)
 	}
+	return output
 }
 
 func publicKey(path string) ssh.AuthMethod {

@@ -1,20 +1,20 @@
 set -e
 downloadTools(){
-  echo "downloading tools"
+  echo "[$(hostname -f)] downloading tools"
 
   rkeBinDst=/usr/local/bin/rke
-  if [[ -f $rkeBinDst ]]; then
-    echo "$rkeBinDst present, skipping"
+  if [ -f $rkeBinDst ]; then
+    echo "[$(hostname -f)] $rkeBinDst present, skipping"
   else
-    echo "downloading rke..."
+    echo "[$(hostname -f)] downloading rke..."
     curl -Lso /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.2.7/rke_linux-amd64
   fi
 
   k9sBinDst=/usr/local/bin/k9s
-  if [[ -f $k9sBinDst ]]; then
-    echo "$k9sBinDst present, skipping"
+  if [ -f $k9sBinDst ]; then
+    echo "[$(hostname -f)] $k9sBinDst present, skipping"
   else
-    echo "downloading k9s..."
+    echo "[$(hostname -f)] downloading k9s..."
     mkdir -p tmp \
      && cd tmp \
      && curl -Lso k9s.tar.gz https://github.com/derailed/k9s/releases/download/v0.24.7/k9s_Linux_x86_64.tar.gz \
@@ -25,18 +25,18 @@ downloadTools(){
   fi
 
   kubectlBinDst=/usr/local/bin/kubectl
-  if [[ -f $kubectlBinDst ]]; then
-    echo "$kubectlBinDst present, skipping"
+  if [ -f $kubectlBinDst ]; then
+    echo "[$(hostname -f)] $kubectlBinDst present, skipping"
   else
-    echo "downloading kubectl..."
+    echo "[$(hostname -f)] downloading kubectl..."
     curl -Lso /usr/local/bin/kubectl https://dl.k8s.io/release/v1.20.5/bin/linux/amd64/kubectl
   fi
 
   helmBinDst=/usr/local/bin/helm
-  if [[ -f $helmBinDst ]]; then
-    echo "$helmBinDst present, skipping"
+  if [ -f $helmBinDst ]; then
+    echo "[$(hostname -f)] $helmBinDst present, skipping"
   else
-    echo "downloading helm"
+    echo "[$(hostname -f)] downloading helm"
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh
@@ -58,23 +58,23 @@ hasSudo() {
 
 patchSshUser(){
   userSudo=$(hasSudo)
-  if [[ $userSudo == "has_sudo__pass_set" ]]; then
+  if [ $userSudo == "has_sudo__pass_set" ]; then
 
-    echo "user has sudo access and password is set, no need to patch"
+    echo "[$(hostname -f)] user has sudo access and password is set, no need to patch"
 
     cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
-    if [[ $cnvrgSudoersGroupExists -eq 0 ]]; then
+    if [ $cnvrgSudoersGroupExists -eq 0 ]; then
       sudo groupadd cnvrg-sudoers
     else
-      echo "cnvrg-sudoers group already exists"
+      echo "[$(hostname -f)] cnvrg-sudoers group already exists"
     fi
 
     sudo su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
 
-  elif [[ $userSudo == "has_sudo__needs_pass" ]]; then
+  elif [ $userSudo == "has_sudo__needs_pass" ]; then
 
     cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
-    if [[ $cnvrgSudoersGroupExists -eq 0 ]]; then
+    if [ $cnvrgSudoersGroupExists -eq 0 ]; then
       echo $PASSWD | sudo -S groupadd cnvrg-sudoers
     else
       echo "cnvrg-sudoers group already exists"
@@ -92,37 +92,46 @@ patchSshUser(){
 
 createUser(){
   userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
-  if [[ $userExists -eq 0 ]]; then
-    echo "creating user cnvrg"
+  if [ $userExists -eq 0 ]; then
+    echo "[$(hostname -f)] creating user cnvrg"
     useradd -m -d /home/{{ .Data.CnvrgUser }} -s /bin/bash -p paMfuNMgwFAX2 --groups sudo {{ .Data.CnvrgUser }}
+    mkdir -p /home/{{ .Data.CnvrgUser }}/.ssh
+    mkdir -p /home/{{ .Data.CnvrgUser }}/rke-cluster
   else
-    echo "user for cnvrg already exists, skipping user creation"
+    echo "[$(hostname -f)] user for cnvrg already exists, skipping user creation"
   fi
 }
 
 addUserToGroups(){
-  usermod -a -G sudo,docker {{ .Data.CnvrgUser }}
+  usermod -a -G sudo,docker,cnvrg-sudoers {{ .Data.CnvrgUser }}
 }
 
 installDocker(){
-  apt update -y
-  apt install docker.io=19.03.8-0ubuntu1.20.04.2 -y
+  2>&1 apt update -y
+  2>&1 apt install docker.io=19.03.8-0ubuntu1.20.04.2 -y
+  2>&1 systemctl enable docker
 }
 
 generateSSHKeys(){
-  if [[ -f ~/.ssh/id_rsa ]]; then
-    echo "ssh keys exists, skipping"
+  if [ -f ~/.ssh/id_rsa ]; then
+    echo "[$(hostname -f)] ssh keys exists, skipping"
   else
-    echo "generating ssh keys"
-    mkdir -p ~/.ssh
-    ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -q -N ""
+    echo "[$(hostname -f)] generating ssh keys"
+    ssh-keygen -b 2048 -t rsa -f ~/.ssh/id_rsa -q -N ""
     cp ~/.ssh/id_rsa.pub ~/.ssh/authorized_keys
   fi
 }
 
-actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser"
+getMainIp(){
+  iface=$(cat /proc/net/route | head -n2 | tail -n1 | awk '{print $1}')
+  echo $(ip -4 addr show $iface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+}
+
+
+
+actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser|getMainIp"
 if [ "$#" -ne 1 ]; then
-    echo "missing action parameter, provide one of the following: $actions"
+    echo "[$(hostname -f)] missing action parameter, provide one of the following: $actions"
     exit 1
 fi
 
@@ -145,8 +154,11 @@ case $1 in
 "patchSshUser")
   patchSshUser
   ;;
+"getMainIp")
+  getMainIp
+  ;;
 *)
-  echo "ERROR: acceptable values for action: $actions"
+  echo "[$(hostname -f)] ERROR: acceptable values for action: $actions"
   exit 1
   ;;
 esac
