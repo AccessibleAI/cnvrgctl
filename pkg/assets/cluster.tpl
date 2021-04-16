@@ -11,6 +11,7 @@ nodes:
       - controlplane
       - etcd
       - worker
-addons_include:
-  - ./cnvrg-crds.yaml
-  - ./cnvrg-operator.yaml
+authentication:
+  strategy: x509
+  sans:
+    - {{ .Data.ExternalIp }}

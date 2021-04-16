@@ -12,14 +12,12 @@ import (
 	"strings"
 )
 
-
-
 var rootParams = []cmd.Param{
-	{Name: "verbose", Shorthand :"v", Value: false, Usage: "--verbose=true|false"},
-	{Name: "json-log", Shorthand :"J", Value: false, Usage: "--json-log=true|false"},
+	{Name: "verbose", Shorthand: "v", Value: false, Usage: "--verbose=true|false"},
+	{Name: "json-log", Shorthand: "J", Value: false, Usage: "--json-log=true|false"},
 	{Name: "cnvrgapp-name", Shorthand: "n", Value: "cnvrg-app", Usage: "cnvrgapp object name"},
-	{Name: "cnvrg-namespace", Shorthand :"S", Value: "cnvrg", Usage: "cnvrgapp namespace"},
-	{Name: "dry-run", Shorthand :"d", Value: false, Usage: "--dry-run=true|false"},
+	{Name: "cnvrg-namespace", Shorthand: "S", Value: "cnvrg", Usage: "cnvrgapp namespace"},
+	{Name: "dry-run", Shorthand: "d", Value: false, Usage: "--dry-run=true|false"},
 	{Name: "kubeconfig", Shorthand: "", Value: kubeconfigDefaultLocation(), Usage: "absolute path to the kubeconfig file"},
 }
 
@@ -74,8 +72,12 @@ func setupCommands() {
 	//setParams(upgradeAppParams, appUpgradeCmd)
 	//upgradeCmd.AddCommand(appUpgradeCmd)
 
-	setParams(cmd.ClusterUpParams, cmd.ClusterUpCmd)
+	//setParams(cmd.ClusterUpParams, cmd.ClusterUpCmd)
+	//setParams(cmd.ClusterUpParams, cmd.ClusterRemoveCmd)
 
+
+
+	setParams(cmd.ClusterParams, cmd.ClusterCmd)
 	setParams(cmd.ImagesDumpParams, cmd.DumpCmd)
 	setParams(cmd.ImagesParams, cmd.ImagesCmd)
 
@@ -83,6 +85,7 @@ func setupCommands() {
 
 	// cluster
 	cmd.ClusterCmd.AddCommand(cmd.ClusterUpCmd)
+	cmd.ClusterCmd.AddCommand(cmd.ClusterRemoveCmd)
 
 	// images
 	cmd.ImagesCmd.AddCommand(cmd.DumpCmd)

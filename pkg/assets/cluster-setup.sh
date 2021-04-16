@@ -7,7 +7,8 @@ downloadTools(){
     echo "[$(hostname -f)] $rkeBinDst present, skipping"
   else
     echo "[$(hostname -f)] downloading rke..."
-    curl -Lso /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.2.7/rke_linux-amd64
+    curl -Lso $rkeBinDst https://github.com/rancher/rke/releases/download/v1.2.7/rke_linux-amd64
+    chmod 0755 $rkeBinDst
   fi
 
   k9sBinDst=/usr/local/bin/k9s
@@ -19,9 +20,10 @@ downloadTools(){
      && cd tmp \
      && curl -Lso k9s.tar.gz https://github.com/derailed/k9s/releases/download/v0.24.7/k9s_Linux_x86_64.tar.gz \
      && tar zxvf k9s.tar.gz \
-     && cp ./k9s /usr/local/bin/k9s \
+     && cp ./k9s $k9sBinDst \
      && cd ../ \
      && rm -fr tmp
+    chmod 0755 $k9sBinDst
   fi
 
   kubectlBinDst=/usr/local/bin/kubectl
@@ -29,7 +31,8 @@ downloadTools(){
     echo "[$(hostname -f)] $kubectlBinDst present, skipping"
   else
     echo "[$(hostname -f)] downloading kubectl..."
-    curl -Lso /usr/local/bin/kubectl https://dl.k8s.io/release/v1.20.5/bin/linux/amd64/kubectl
+    curl -Lso $kubectlBinDst https://dl.k8s.io/release/v1.20.5/bin/linux/amd64/kubectl
+    chmod 0755 $kubectlBinDst
   fi
 
   helmBinDst=/usr/local/bin/helm
@@ -40,6 +43,7 @@ downloadTools(){
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh
+    chmod 0755 $helmBinDst
     helm repo add cnvrg https://charts.cnvrg.io
   fi
 }
@@ -96,7 +100,9 @@ createUser(){
     echo "[$(hostname -f)] creating user cnvrg"
     useradd -m -d /home/{{ .Data.CnvrgUser }} -s /bin/bash -p paMfuNMgwFAX2 --groups sudo {{ .Data.CnvrgUser }}
     mkdir -p /home/{{ .Data.CnvrgUser }}/.ssh
+    mkdir -p /home/{{ .Data.CnvrgUser }}/.kube
     mkdir -p /home/{{ .Data.CnvrgUser }}/rke-cluster
+    chown -R {{ .Data.CnvrgUser }}:{{ .Data.CnvrgUser }} /home/{{ .Data.CnvrgUser }}
   else
     echo "[$(hostname -f)] user for cnvrg already exists, skipping user creation"
   fi
@@ -127,6 +133,24 @@ getMainIp(){
   echo $(ip -4 addr show $iface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 }
 
+removeRke(){
+  userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
+  if [ $userExists -eq 1 ]; then
+    cd /home/{{ .Data.CnvrgUser }}/rke-cluster && rke -d remove --force && rm -fr  ~/.kube/config
+  else
+    echo "[$(hostname -f)] K8s already removed"
+  fi
+}
+
+delUser() {
+  userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
+  if [ $userExists -eq 1 ]; then
+    2>&1 killall -u {{ .Data.CnvrgUser }}
+    2>&1 userdel -fr {{ .Data.CnvrgUser }}
+  else
+    echo "[$(hostname -f)] user {{ .Data.CnvrgUser }} already removed"
+  fi
+}
 
 
 actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser|getMainIp"
@@ -156,6 +180,12 @@ case $1 in
   ;;
 "getMainIp")
   getMainIp
+  ;;
+"removeRke")
+  removeRke
+  ;;
+"delUser")
+  delUser
   ;;
 *)
   echo "[$(hostname -f)] ERROR: acceptable values for action: $actions"
