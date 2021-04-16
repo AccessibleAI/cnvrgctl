@@ -79,12 +79,12 @@ patchSshUser(){
 
     cnvrgSudoersGroupExists=$(cat /etc/group | grep cnvrg-sudoers | wc -l)
     if [ $cnvrgSudoersGroupExists -eq 0 ]; then
-      echo $PASSWD | sudo -S groupadd cnvrg-sudoers
+      echo $PASSWD | 2>&1 sudo -S groupadd cnvrg-sudoers
     else
       echo "cnvrg-sudoers group already exists"
     fi
-    echo $PASSWD | sudo -S su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
-    echo $PASSWD | sudo -S usermod -a -G cnvrg-sudoers {{ .Data.SshUser }}
+    echo $PASSWD | 2>&1 sudo -S su root -c 'echo "%cnvrg-sudoers ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/cnvrg-sudoers'
+    echo $PASSWD | 2>&1 sudo -S usermod -a -G cnvrg-sudoers {{ .Data.SshUser }}
 
   else
 
@@ -114,7 +114,7 @@ addUserToGroups(){
 
 installDocker(){
   2>&1 apt update -y
-  2>&1 apt install docker.io=19.03.8-0ubuntu1.20.04.2 -y
+  2>&1 apt install docker.io -y
   2>&1 systemctl enable docker
 }
 

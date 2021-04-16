@@ -59,26 +59,26 @@ var ClusterUpCmd = &cobra.Command{
 
 		if viper.GetBool("download-tools") {
 			logrus.Info("downloading tools")
-			pkg.ExecSshBashScript("sudo cluster-setup.sh downloadTools")
+			pkg.NewCmd("sudo cluster-setup.sh downloadTools").Exec()
 		}
 
 		//installing docker
 		if viper.GetBool("install-docker") {
 			logrus.Infof("installing docker")
-			pkg.ExecSshBashScript(`sudo cluster-setup.sh installDocker`)
+			pkg.NewCmd(`sudo cluster-setup.sh installDocker`).Exec()
 		}
 
 		// create user for cnvrg
 		logrus.Infof("creating %s user", cnvrgUser)
-		pkg.ExecSshBashScript(`sudo cluster-setup.sh createUser`)
+		pkg.NewCmd(`sudo cluster-setup.sh createUser`).Exec()
 
 		// add user to sudo,docker groups
 		logrus.Infof("adding %s user to groups", cnvrgUser)
-		pkg.ExecSshBashScript(`sudo cluster-setup.sh addUserToGroups`)
+		pkg.NewCmd(`sudo cluster-setup.sh addUserToGroups`).Exec()
 
 		// generate ssh keys
 		logrus.Infof("generating ssh keys")
-		pkg.ExecSshBashScript(`sudo su ` + cnvrgUser + ` -c "cluster-setup.sh generateSSHKeys"`)
+		pkg.NewCmd(`sudo su ` + cnvrgUser + ` -c "cluster-setup.sh generateSSHKeys"`).Exec()
 
 		prepareRkeSetup()
 		rkeUp()
@@ -94,17 +94,21 @@ var ClusterUpCmd = &cobra.Command{
 func prepareSetup() {
 	tmpDir := fmt.Sprintf("/tmp/%s", viper.GetString("ssh-user"))
 	tmpClusterSetup := fmt.Sprintf("%s/cluster-setup.sh", tmpDir)
-	pkg.ExecSshBashScript("mkdir -p " + tmpDir)
-	pkg.ExecSshBashScript(fmt.Sprintf("sudo rm -fr %s && mkdir -p %s", tmpDir, tmpDir))
-	if err := pkg.SSHCopyFile(generateClusterSetupScript(), tmpClusterSetup); err != nil {
+	pkg.NewCmd(fmt.Sprintf("mkdir -p %s", tmpDir)).Exec()
+
+	if err := pkg.NewCmd("").Copy(generateClusterSetupScript(), tmpClusterSetup); err != nil {
 		logrus.Error(err)
 		panic(err)
 	}
+
 	// prepare deployment scripts
 	logrus.Infof("copying deployment scripts")
-	pkg.ExecSshBashScript(`chmod 0755 ` + tmpClusterSetup)
-	pkg.ExecSshBashScript(fmt.Sprintf(`PASSWD=%s `+tmpClusterSetup+` patchSshUser`, viper.GetString("ssh-pass")))
-	pkg.ExecSshBashScript(`sudo cp ` + tmpClusterSetup + " /usr/local/bin/cluster-setup.sh")
+	pkg.NewCmd(`chmod 0755 ` + tmpClusterSetup).Exec()
+	cmd := pkg.NewCmd(fmt.Sprintf(`PASSWD=%s `+tmpClusterSetup+` patchSshUser`, viper.GetString("ssh-pass")))
+	cmd.Hidden = true
+	cmd.Exec()
+	pkg.NewCmd(`sudo mv ` + tmpClusterSetup + " /usr/local/bin/cluster-setup.sh").Exec()
+
 }
 
 func generateRkeClusterManifest() string {
@@ -148,19 +152,19 @@ func prepareRkeSetup() {
 	rkeClusterTmpFile := "/tmp/" + sshUser + "/cluster.yml"
 	rkeClusterFinalFile := "/home/" + cnvrgUser + "/rke-cluster/cluster.yml"
 	logrus.Infof("copying rke cluster.yml")
-	if err := pkg.SSHCopyFile(generateRkeClusterManifest(), rkeClusterTmpFile); err != nil {
+	if err := pkg.NewCmd("").Copy(generateRkeClusterManifest(), rkeClusterTmpFile); err != nil {
 		logrus.Error(err)
 		panic(err)
 	}
 	cmd := fmt.Sprintf(`sudo chown %s:%s %s && sudo mv %s %s`, cnvrgUser, cnvrgUser, rkeClusterTmpFile, rkeClusterTmpFile, rkeClusterFinalFile)
-	pkg.ExecSshBashScript(cmd)
+	pkg.NewCmd(cmd).Exec()
 }
 
 func rkeUp() {
 	cnvrgUser := viper.GetString("cnvrg-user")
 	logrus.Infof("rke up")
-	rkeUpCmd := fmt.Sprintf(`sudo su %s -c "cd /home/%s/rke-cluster && rke -d up && cp kube_config_cluster.yml ~/.kube/config"`, cnvrgUser, cnvrgUser)
-	pkg.ExecSshBashScript(rkeUpCmd)
+	rkeUpCmd := fmt.Sprintf(`sudo su %s -c "cd /home/%s/rke-cluster && rke -d up --ignore-docker-version && cp kube_config_cluster.yml ~/.kube/config"`, cnvrgUser, cnvrgUser)
+	pkg.NewCmd(rkeUpCmd).Exec()
 	logrus.Infof("K8s is ready, time to deploy cnvrg %s! (docs: https://github.com/accessibleAI/cnvrgio-operator)", emoji.Sprint(":rocket:"))
 }
 
@@ -192,25 +196,17 @@ func generateClusterSetupScript() string {
 func getMainIp() string {
 	// get node main ip
 	logrus.Infof("getting node main ip")
-	output := pkg.ExecSshBashScript("sudo cluster-setup.sh getMainIp")
-	if len(output) < 1 {
+	cmd := pkg.NewCmd("sudo cluster-setup.sh getMainIp")
+	cmd.Exec()
+	if len(cmd.Output) < 1 {
 		logrus.Error("can't detect main IP")
 		panic("can't detect main IP")
 	}
-	return strings.TrimSpace(output[0])
+	return strings.TrimSpace(cmd.Output[0])
 }
 
 func renderTemplate(templateFile string, templateData map[string]interface{}) (*bytes.Buffer, error) {
 	var tpl bytes.Buffer
-	//templateData := map[string]interface{}{
-	//	"Data": map[string]interface{}{
-	//		"Server":        getMainIp(),
-	//		"User":          cnvrgUser,
-	//		"SshPrivateKey": sshPrivateKey,
-	//	},
-	//}
-
-	//clusterManifestTpl := "/pkg/assets/cluster.tpl"
 	f, err := pkger.Open(templateFile)
 	if err != nil {
 		logrus.Errorf("error reading cluster.tpl %v", err)
@@ -220,36 +216,23 @@ func renderTemplate(templateFile string, templateData map[string]interface{}) (*
 		logrus.Errorf("%v, error reading file: %v", err, templateFile)
 		return nil, err
 	}
-
 	clusterTmpl, err := template.New(strings.ReplaceAll(templateFile, "/", "-")).Parse(string(b))
 	if err != nil {
 		logrus.Errorf("%v, template: %v", err, templateFile)
 		return nil, err
 	}
-
 	if err = clusterTmpl.Execute(&tpl, templateData); err != nil {
 		logrus.Errorf("err: %v rendering template error", err)
 		return nil, err
 	}
-
 	return &tpl, nil
-	//// dir for rke
-	//if err := os.MkdirAll(rkeDir, os.ModePerm); err != nil {
-	//	logrus.Errorf("err: %v, faild to create %v", err, rkeDir)
-	//	panic(err)
-	//}
-	//
-	//if err := ioutil.WriteFile(rkeDir+"/cluster.yml", tpl.Bytes(), 0644); err != nil {
-	//	logrus.Errorf("err: %v, faild to cluster.yml %v", err, rkeDir)
-	//	panic(err)
-	//}
 }
 
 func cleanup() {
 	logrus.Info("removing cnvrg K8s cluster and cnvrg user")
 	cnvrgUser := viper.GetString("cnvrg-user")
 	cmd := fmt.Sprintf(`if [ $(cat /etc/passwd | grep %s | wc -l) -eq 1 ]; then sudo su %s -c "cluster-setup.sh removeRke"; fi`, cnvrgUser, cnvrgUser)
-	pkg.ExecSshBashScript(cmd)
-	pkg.ExecSshBashScript("sudo cluster-setup.sh delUser")
+	pkg.NewCmd(cmd).Exec()
+	pkg.NewCmd("sudo cluster-setup.sh delUser").Exec()
 	logrus.Info("cleanup successfully finished!")
 }

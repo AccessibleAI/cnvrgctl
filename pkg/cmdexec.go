@@ -8,47 +8,62 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"os/exec"
 	"strings"
 	"time"
 )
 
-func ExecBashCommand(args []string) (string, error) {
-	cmdArgs := []string{"-lc"}
-	cmdArgs = append(cmdArgs, args...)
-	userCmd := exec.Command("/bin/bash", cmdArgs...)
-	if out, err := userCmd.CombinedOutput(); err != nil {
-		return string(out), err
-	} else {
-		return string(out), nil
-	}
+type SshBashCommand struct {
+	SshHost string
+	SshPort int
+	SshUser string
+	SshPass string
+	SshKey  string
+	Command string
+	Output  []string
+	Hidden  bool
+
 }
 
-func ExecSshBashScript(command string) []string {
+func NewCmd(command string) *SshBashCommand {
+	c := SshBashCommand{
+		SshHost: viper.GetString("host"),
+		SshPort: viper.GetInt("port"),
+		SshUser: viper.GetString("ssh-user"),
+		SshPass: viper.GetString("ssh-pass"),
+		SshKey:  viper.GetString("ssh-key"),
+		Command: fmt.Sprintf("/bin/bash -lc '%s'", command),
+		Hidden:  false,
+	}
+	return &c
+}
+
+func (c *SshBashCommand) Exec() {
 	if viper.GetBool("dry-run") {
 		logrus.Info("dry-run enabled, skipping ExecSshCommand")
-		return nil
+		return
 	}
-	config := sshClientConfig()
-	sshHost := hostAddress()
+	config := c.sshClientConfig()
+	sshHost := c.hostAddress()
 	conn, err := ssh.Dial("tcp", sshHost, config)
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
-	command = fmt.Sprintf("/bin/bash -lc '%s'", command)
-	logrus.Infof("[%s] executing %s ", sshHost, command)
-	return runCommand(command, conn)
+
+	if c.Hidden == false {
+		logrus.Infof("[%s] executing %s ", c.SshHost, c.Command)
+	}
+	c.Output = runCommand(c.Command, conn)
 }
 
-func SSHCopyFile(scriptStr, dstPath string) error {
+func (c *SshBashCommand) Copy(scriptStr, dstPath string) error {
 	if viper.GetBool("dry-run") {
 		logrus.Info("dry-run enabled, skipping SSHCopyFile")
 		return nil
 	}
 
-	config := sshClientConfig()
-	sshHost := hostAddress()
+	config := c.sshClientConfig()
+	sshHost := c.hostAddress()
 	logrus.Infof("[%s] copying %s ", sshHost, dstPath)
 	conn, err := ssh.Dial("tcp", sshHost, config)
 	if err != nil {
@@ -74,20 +89,37 @@ func SSHCopyFile(scriptStr, dstPath string) error {
 	return nil
 }
 
-func getAuthMethod() []ssh.AuthMethod {
-	if viper.GetString("ssh-pass") != "" {
+func (c *SshBashCommand) getAuthMethod() []ssh.AuthMethod {
+	if c.SshPass != "" {
 		return []ssh.AuthMethod{
-			ssh.Password(viper.GetString("ssh-pass")),
+			ssh.Password(c.SshPass),
 		}
 	}
-	if viper.GetString("ssh-key") != "" {
+	if c.SshKey != "" {
 		return []ssh.AuthMethod{
-			publicKey(viper.GetString("ssh-key")),
+			publicKey(c.SshKey),
 		}
 	}
 	logrus.Error("both --ssh-pass and --ssh-key flags wasn't set, can't continue")
 	panic("--ssh-pass and --ssh-key flags wasn't set, can't continue")
 
+}
+
+func (c *SshBashCommand) sshClientConfig() *ssh.ClientConfig {
+	timeout, _ := time.ParseDuration("10s")
+	return &ssh.ClientConfig{
+		Config:          ssh.Config{},
+		User:            viper.GetString("ssh-user"),
+		Auth:            c.getAuthMethod(),
+		Timeout:         timeout,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+}
+
+func (c *SshBashCommand) hostAddress() string {
+	connAddress := fmt.Sprintf("%s:%d", viper.GetString("host"), viper.GetInt("ssh-port"))
+	logrus.Infof("connecting to: %s", connAddress)
+	return connAddress
 }
 
 func runCommand(cmd string, conn *ssh.Client) []string {
@@ -139,22 +171,4 @@ func publicKey(path string) ssh.AuthMethod {
 		panic(err)
 	}
 	return ssh.PublicKeys(signer)
-}
-
-func sshClientConfig() *ssh.ClientConfig {
-	timeout, _ := time.ParseDuration("10s")
-	return &ssh.ClientConfig{
-		Config:          ssh.Config{},
-		User:            viper.GetString("ssh-user"),
-		Auth:            getAuthMethod(),
-		Timeout:         timeout,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-}
-
-func hostAddress() string {
-	connAddress := fmt.Sprintf("%s:%d", viper.GetString("host"), viper.GetInt("ssh-port"))
-	logrus.Infof("connecting to: %s", connAddress)
-	return connAddress
 }
