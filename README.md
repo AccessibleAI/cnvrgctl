@@ -1,6 +1,6 @@
 ### cnvrgctl - command line tool for managing cnvrg stack
 
-### Download and install`cnvrgctl`
+### Download and install `cnvrgctl`
 * mac: [cnvrgctl-darwin-x86_64](https://whitening-pn38xqkin816s3fk.s3-us-west-2.amazonaws.com/cnvrgctl-darwin-x86_64)
   ```shell
   curl -#o /usr/local/bin/cnvrgctl \
