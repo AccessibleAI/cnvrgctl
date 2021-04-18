@@ -16,7 +16,7 @@
   && cnvrgctl completion bash > /etc/bash_completion.d/cnvrgctl
   ```
 ### Usage 
-1. [Deploy all-in-one single node K8s cluster for cnvrg](https://github.com/AccessibleAI/cnvrgctl#importing-images-for-air-gap-setups) 
+1. [Deploy all-in-one single node K8s cluster for cnvrg](https://github.com/AccessibleAI/cnvrgctl#deploy-all-in-one-single-node-k8s-cluster-for-cnvrg) 
 2. [Import images](https://github.com/AccessibleAI/cnvrgctl#importing-images-for-air-gap-setups)
 
 #### Deploy all-in-one single node K8s cluster for cnvrg 
