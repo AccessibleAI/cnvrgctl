@@ -29,4 +29,4 @@ get-tools:
 build-all: build-linux build-mac
 
 upload:
-	aws s3 cp ./bin/ s3://whitening-pn38xqkin816s3fk --recursive
+	aws s3 cp ./bin/ s3://cnvrg-public-images --recursive

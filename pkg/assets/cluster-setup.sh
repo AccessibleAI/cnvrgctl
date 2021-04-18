@@ -139,7 +139,7 @@ getMainIp(){
 
 removeRke(){
   userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
-  if [ $userExists -eq 1 ]; then
+  if [ $userExists -eq 1 ]; thenssh -p 5008 root@cnvrg.builders-cz.net
     cd /home/{{ .Data.CnvrgUser }}/rke-cluster && rke -d remove --force && rm -fr  ~/.kube/config
   else
     echo "[$(hostname -f)] K8s already removed"
