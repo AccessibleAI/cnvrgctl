@@ -99,13 +99,16 @@ createUser(){
   if [ $userExists -eq 0 ]; then
     echo "[$(hostname -f)] creating user cnvrg"
     useradd -m -d /home/{{ .Data.CnvrgUser }} -s /bin/bash -p paMfuNMgwFAX2 --groups sudo {{ .Data.CnvrgUser }}
-    mkdir -p /home/{{ .Data.CnvrgUser }}/.ssh
-    mkdir -p /home/{{ .Data.CnvrgUser }}/.kube
-    mkdir -p /home/{{ .Data.CnvrgUser }}/rke-cluster
-    chown -R {{ .Data.CnvrgUser }}:{{ .Data.CnvrgUser }} /home/{{ .Data.CnvrgUser }}
   else
     echo "[$(hostname -f)] user for cnvrg already exists, skipping user creation"
   fi
+}
+
+workdirs(){
+  mkdir -p /home/{{ .Data.CnvrgUser }}/.ssh
+  mkdir -p /home/{{ .Data.CnvrgUser }}/.kube
+  mkdir -p /home/{{ .Data.CnvrgUser }}/rke-cluster
+  chown -R {{ .Data.CnvrgUser }}:{{ .Data.CnvrgUser }} /home/{{ .Data.CnvrgUser }}
 }
 
 addUserToGroups(){
@@ -131,6 +134,7 @@ generateSSHKeys(){
 getMainIp(){
   iface=$(cat /proc/net/route | head -n2 | tail -n1 | awk '{print $1}')
   echo $(ip -4 addr show $iface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+  sleep 1 # to make sure stdout stream reached the client
 }
 
 removeRke(){
@@ -153,7 +157,7 @@ delUser() {
 }
 
 
-actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser|getMainIp"
+actions="downloadTools|createUser|installDocker|generateSSHKeys|addUserToGroups|patchSshUser|getMainIp|workdirs"
 if [ "$#" -ne 1 ]; then
     echo "[$(hostname -f)] missing action parameter, provide one of the following: $actions"
     exit 1
@@ -186,6 +190,9 @@ case $1 in
   ;;
 "delUser")
   delUser
+  ;;
+"workdirs")
+  workdirs
   ;;
 *)
   echo "[$(hostname -f)] ERROR: acceptable values for action: $actions"

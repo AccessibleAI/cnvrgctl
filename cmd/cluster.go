@@ -72,6 +72,10 @@ var ClusterUpCmd = &cobra.Command{
 		logrus.Infof("creating %s user", cnvrgUser)
 		pkg.NewCmd(`sudo cluster-setup.sh createUser`).Exec()
 
+		// create workdirs
+		logrus.Infof("creating workdirs")
+		pkg.NewCmd(`sudo cluster-setup.sh workdirs`).Exec()
+
 		// add user to sudo,docker groups
 		logrus.Infof("adding %s user to groups", cnvrgUser)
 		pkg.NewCmd(`sudo cluster-setup.sh addUserToGroups`).Exec()
@@ -152,6 +156,7 @@ func prepareRkeSetup() {
 	rkeClusterTmpFile := "/tmp/" + sshUser + "/cluster.yml"
 	rkeClusterFinalFile := "/home/" + cnvrgUser + "/rke-cluster/cluster.yml"
 	logrus.Infof("copying rke cluster.yml")
+	pkg.NewCmd(fmt.Sprintf("sudo rm -fr %s", rkeClusterTmpFile)).Exec()
 	if err := pkg.NewCmd("").Copy(generateRkeClusterManifest(), rkeClusterTmpFile); err != nil {
 		logrus.Error(err)
 		panic(err)
