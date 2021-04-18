@@ -84,14 +84,9 @@ var ClusterUpCmd = &cobra.Command{
 		logrus.Infof("generating ssh keys")
 		pkg.NewCmd(`sudo su ` + cnvrgUser + ` -c "cluster-setup.sh generateSSHKeys"`).Exec()
 
+		// deploy rke
 		prepareRkeSetup()
 		rkeUp()
-
-		//dumpDeploymentAssets()
-		//generateRkeClusterManifest()
-		//fixPermissions()
-		//rkeUp()
-		//checkClusterReady()
 	},
 }
 
@@ -190,10 +185,6 @@ func generateClusterSetupScript() string {
 		logrus.Infof("\n%s", buffer.String())
 		return ""
 	}
-	//if err := ioutil.WriteFile("/usr/local/bin/cluster-setup.sh", buffer.Bytes(), 0755); err != nil {
-	//	logrus.Errorf("err: %v, faild to save cluster-setup.sh %v", err, rkeDir)
-	//	panic(err)
-	//}
 	return buffer.String()
 
 }
