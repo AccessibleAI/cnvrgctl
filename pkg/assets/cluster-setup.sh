@@ -60,7 +60,7 @@ hasSudo() {
     fi
 }
 
-patchSshUser(){
+patchSshUser()  {
   userSudo=$(hasSudo)
   if [ $userSudo == "has_sudo__pass_set" ]; then
 
@@ -139,7 +139,7 @@ getMainIp(){
 
 removeRke(){
   userExists=$(cat /etc/passwd | grep {{ .Data.CnvrgUser }} | wc -l)
-  if [ $userExists -eq 1 ]; thenssh -p 5008 root@cnvrg.builders-cz.net
+  if [ $userExists -eq 1 ]; then
     cd /home/{{ .Data.CnvrgUser }}/rke-cluster && rke -d remove --force && rm -fr  ~/.kube/config
   else
     echo "[$(hostname -f)] K8s already removed"
