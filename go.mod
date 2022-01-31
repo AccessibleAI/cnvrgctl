@@ -6,7 +6,6 @@ require (
 	github.com/Microsoft/go-winio v0.4.17-0.20210211115548-6eac466e5fa3 // indirect
 	github.com/briandowns/spinner v1.12.0
 	github.com/containerd/containerd v1.5.0-beta.1 // indirect
-	github.com/d4l3k/messagediff v1.2.1 // indirect
 	github.com/docker/docker v20.10.5+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/google/uuid v1.1.2
@@ -20,7 +19,6 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	gopkg.in/d4l3k/messagediff.v1 v1.2.1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.20.1
 	k8s.io/apimachinery v0.20.1

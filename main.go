@@ -69,7 +69,6 @@ func setupCommands() {
 	// Init config
 	cobra.OnInitialize(initConfig)
 
-	setParams(cmd.InformParams, cmd.InformCmd)
 	setParams(cmd.ClusterParams, cmd.ClusterCmd)
 	setParams(cmd.ImagesDumpParams, cmd.DumpCmd)
 	setParams(cmd.ImagesParams, cmd.ImagesCmd)
@@ -89,7 +88,6 @@ func setupCommands() {
 
 
 	rootCmd.AddCommand(cmd.ClusterCmd)
-	rootCmd.AddCommand(cmd.InformCmd)
 	rootCmd.AddCommand(cmd.ImagesCmd)
 	rootCmd.AddCommand(cmd.CompletionCmd)
 	rootCmd.AddCommand(cmd.VersionCmd)
