@@ -44,7 +44,7 @@ downloadTools(){
     chmod 700 get_helm.sh
     ./get_helm.sh
     chmod 0755 $helmBinDst
-    helm repo add cnvrg https://charts.cnvrg.io
+    helm repo add cnvrg https://charts.v3.cnvrg.io
   fi
 }
 
